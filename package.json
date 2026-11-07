@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "nosleep:status": "./scripts/nosleep.sh status",
+    "nosleep:on": "./scripts/nosleep.sh on",
+    "nosleep:off": "./scripts/nosleep.sh off",
+    "nosleep:agents": "./scripts/nosleep.sh agents"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",

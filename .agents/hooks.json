@@ -1,0 +1,19 @@
+{
+  "project-sleep-manager": {
+    "enabled": true,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node scripts/agent_sleep_hook.js PreInvocation",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node scripts/agent_sleep_hook.js Stop",
+        "timeout": 10
+      }
+    ]
+  }
+}

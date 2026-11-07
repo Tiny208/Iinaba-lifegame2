@@ -1,0 +1,156 @@
+{
+  "nodes": [
+    {
+      "id": "INABA_RULES.md",
+      "label": "INABA System Rules & Specifications",
+      "node_type": "document",
+      "source_file": "INABA_RULES.md",
+      "_origin": "semantic"
+    },
+    {
+      "id": "Philosophy:Stoicism_and_Minimalism",
+      "label": "Philosophy: Stoicism & Anti-Overhead Minimalism",
+      "node_type": "concept",
+      "source_file": "INABA_RULES.md",
+      "_origin": "semantic"
+    },
+    {
+      "id": "DesignSystem:EditorialMinimalism",
+      "label": "Editorial Minimalism Design System",
+      "node_type": "concept",
+      "source_file": "INABA_RULES.md",
+      "_origin": "semantic"
+    },
+    {
+      "id": "DatabaseArchitecture:PostgreSQL_RLS",
+      "label": "Supabase PostgreSQL Database Architecture & RLS",
+      "node_type": "concept",
+      "source_file": "supabase/migrations/20261107000000_inaba_init.sql",
+      "_origin": "semantic"
+    },
+    {
+      "id": "CoreModule:Home",
+      "label": "Core Module: Home & Today Priorities",
+      "node_type": "module",
+      "source_file": "src/pages/HomePage.tsx",
+      "_origin": "semantic"
+    },
+    {
+      "id": "CoreModule:InboxQuickCapture",
+      "label": "Core Module: Inbox & Universal Quick Capture",
+      "node_type": "module",
+      "source_file": "src/pages/InboxPage.tsx",
+      "_origin": "semantic"
+    },
+    {
+      "id": "CoreModule:Focus",
+      "label": "Core Module: Focus (Tasks, Projects, Areas, Calendar)",
+      "node_type": "module",
+      "source_file": "src/pages/FocusPage.tsx",
+      "_origin": "semantic"
+    },
+    {
+      "id": "CoreModule:Library",
+      "label": "Core Module: Library & Bi-directional Knowledge Links",
+      "node_type": "module",
+      "source_file": "src/pages/LibraryPage.tsx",
+      "_origin": "semantic"
+    },
+    {
+      "id": "CoreModule:Reflect",
+      "label": "Core Module: Reflect (Journal, Review, Circle of Control)",
+      "node_type": "module",
+      "source_file": "src/pages/ReflectPage.tsx",
+      "_origin": "semantic"
+    },
+    {
+      "id": "Service:GlobalSearch",
+      "label": "Service: Global Omnibar Search (Cmd+K)",
+      "node_type": "service",
+      "source_file": "src/components/common/GlobalSearchModal.tsx",
+      "_origin": "semantic"
+    }
+  ],
+  "edges": [
+    {
+      "source": "INABA_RULES.md",
+      "target": "Philosophy:Stoicism_and_Minimalism",
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "INABA_RULES.md",
+      "target": "DesignSystem:EditorialMinimalism",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "INABA_RULES.md",
+      "target": "DatabaseArchitecture:PostgreSQL_RLS",
+      "relation": "architects",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "DesignSystem:EditorialMinimalism",
+      "target": "src/components/layout/AppLayout.tsx",
+      "relation": "implemented_by",
+      "confidence": "INFERRED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "DatabaseArchitecture:PostgreSQL_RLS",
+      "target": "supabase/migrations/20261107000000_inaba_init.sql",
+      "relation": "persisted_in",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "CoreModule:Home",
+      "target": "Philosophy:Stoicism_and_Minimalism",
+      "relation": "embodies",
+      "confidence": "INFERRED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "CoreModule:InboxQuickCapture",
+      "target": "src/components/common/QuickCaptureModal.tsx",
+      "relation": "provides",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "CoreModule:Focus",
+      "target": "src/pages/FocusPage.tsx",
+      "relation": "renders",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "CoreModule:Library",
+      "target": "src/pages/LibraryPage.tsx",
+      "relation": "renders",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "CoreModule:Reflect",
+      "target": "src/pages/ReflectPage.tsx",
+      "relation": "renders",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    },
+    {
+      "source": "Service:GlobalSearch",
+      "target": "src/hooks/useGlobalSearch.ts",
+      "relation": "queries",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 1200,
+  "output_tokens": 800
+}
