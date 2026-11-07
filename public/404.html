@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./inaba-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INABA // SECOND BRAIN</title>
+    <script>
+      // Single Page Application redirect for GitHub Pages
+      // If user lands on /auth or /inbox directly, redirect to /#/auth or /#/inbox
+      var path = window.location.pathname;
+      var repo = '/Iinaba-lifegame2';
+      if (path.startsWith(repo)) {
+        var subPath = path.substring(repo.length);
+        if (subPath && subPath !== '/' && !subPath.startsWith('/#')) {
+          window.location.replace(repo + '/#' + subPath + window.location.search);
+        } else {
+          window.location.replace(repo + '/');
+        }
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
