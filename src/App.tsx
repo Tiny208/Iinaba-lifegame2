@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomePage } from '@/pages/HomePage';
 import { InboxPage } from '@/pages/InboxPage';
@@ -11,7 +11,7 @@ import { AuthPage } from '@/pages/AuthPage';
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
           <Route index element={<HomePage />} />
@@ -24,7 +24,7 @@ export const App: React.FC = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
