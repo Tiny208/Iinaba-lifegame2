@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useInbox } from '@/hooks/useInbox';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ onOpenQuickCapture, onOpenSearch }) => {
   const { unprocessedCount } = useInbox();
   const { theme, setTheme, isDark } = useTheme();
+  const { user, profile } = useAuth();
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
@@ -119,29 +121,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenQuickCapture, onOpenSear
       </nav>
 
       {/* Footer Controls: Theme & Settings */}
-      <div className="p-4 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 flex items-center justify-between">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-2 text-xs font-medium text-[#858176] hover:text-[#242424] dark:text-[#8C877D] dark:hover:text-[#EAE7DF] transition-colors',
-              isActive && 'text-[#242424] dark:text-[#EAE7DF] font-semibold'
-            )
-          }
-        >
-          <Settings className="w-4 h-4" />
-          <span>Settings</span>
-        </NavLink>
+      <div className="p-3 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 space-y-2">
+        <div className="flex items-center justify-between">
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-2 text-xs font-medium text-[#858176] hover:text-[#242424] dark:text-[#8C877D] dark:hover:text-[#EAE7DF] transition-colors',
+                isActive && 'text-[#242424] dark:text-[#EAE7DF] font-semibold'
+              )
+            }
+          >
+            <Settings className="w-4 h-4" />
+            <span>Settings</span>
+          </NavLink>
 
-        <button
-          onClick={cycleTheme}
-          className="p-1.5 text-[#858176] hover:text-[#242424] dark:text-[#8C877D] dark:hover:text-[#EAE7DF] rounded transition-colors"
-          title={`Theme: ${theme}`}
-        >
-          {theme === 'light' && <Sun className="w-4 h-4" />}
-          {theme === 'dark' && <Moon className="w-4 h-4" />}
-          {theme === 'system' && <Laptop className="w-4 h-4" />}
-        </button>
+          <button
+            onClick={cycleTheme}
+            className="p-1.5 text-[#858176] hover:text-[#242424] dark:text-[#8C877D] dark:hover:text-[#EAE7DF] rounded transition-colors"
+            title={`Theme: ${theme}`}
+          >
+            {theme === 'light' && <Sun className="w-4 h-4" />}
+            {theme === 'dark' && <Moon className="w-4 h-4" />}
+            {theme === 'system' && <Laptop className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* User state badge */}
+        {!user && (
+          <NavLink
+            to="/auth"
+            className="block text-center py-1 px-2 text-[11px] font-medium bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614] rounded hover:opacity-90 transition-opacity"
+          >
+            Sign In / Initial Setup
+          </NavLink>
+        )}
       </div>
     </aside>
   );

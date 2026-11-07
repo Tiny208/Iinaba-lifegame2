@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Settings,
   Database,
@@ -152,11 +153,11 @@ export const SettingsPage: React.FC = () => {
         ) : (
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-[#858176]">Not signed in.</span>
-            <a href="/auth">
+            <Link to="/auth">
               <Button variant="primary" size="sm">
                 Sign In / Setup Account
               </Button>
-            </a>
+            </Link>
           </div>
         )}
       </section>
