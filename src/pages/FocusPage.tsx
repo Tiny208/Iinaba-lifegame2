@@ -43,7 +43,7 @@ import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { Task, Project, Area, TaskStatus, TaskPriority, ProjectStatus, CalendarEvent } from '@/types/database';
 import { formatDate, formatRelativeDate } from '@/lib/utils';
 
-type FocusTab = 'today' | 'tasks' | 'projects' | 'areas' | 'calendar';
+type FocusTab = 'today' | 'calendar' | 'tasks' | 'projects' | 'areas';
 
 export const FocusPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,7 +66,7 @@ export const FocusPage: React.FC = () => {
 
         {/* Segmented Navigation Tabs */}
         <div className="flex items-center gap-1 bg-[#FFFFFF] dark:bg-[#21201D] p-1 rounded-[4px] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs font-medium overflow-x-auto">
-          {(['today', 'tasks', 'projects', 'areas', 'calendar'] as FocusTab[]).map((tab) => (
+          {(['today', 'calendar', 'tasks', 'projects', 'areas'] as FocusTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setTab(tab)}
@@ -84,10 +84,10 @@ export const FocusPage: React.FC = () => {
 
       {/* Sub-view Content */}
       {currentTab === 'today' && <TodayView />}
+      {currentTab === 'calendar' && <CalendarView />}
       {currentTab === 'tasks' && <TasksView />}
       {currentTab === 'projects' && <ProjectsView />}
       {currentTab === 'areas' && <AreasView />}
-      {currentTab === 'calendar' && <CalendarView />}
     </div>
   );
 };
@@ -1136,14 +1136,16 @@ const AreasView: React.FC = () => {
 };
 
 // ==============================================================================
-// 5. CALENDAR VIEW (Month, Week, List Views)
+// 5. CALENDAR VIEW (Month, Week, List Views with Full Interactive Details & Edit)
 // ==============================================================================
 const CalendarView: React.FC = () => {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const { unifiedItems, isLoading, createEvent, deleteEvent } = useCalendar();
+  const { unifiedItems, isLoading, createEvent, updateEvent, deleteEvent } = useCalendar();
+  const { updateTask, deleteTask } = useTasks();
 
+  // Create Event state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDesc, setEventDesc] = useState('');
@@ -1152,6 +1154,27 @@ const CalendarView: React.FC = () => {
   const [eventEndTime, setEventEndTime] = useState('10:00');
   const [isAllDay, setIsAllDay] = useState(false);
   const [eventLocation, setEventLocation] = useState('');
+
+  // Selected Event (View / Edit) state
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [editEventTitle, setEditEventTitle] = useState('');
+  const [editEventDesc, setEditEventDesc] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+  const [editEventStartTime, setEditEventStartTime] = useState('09:00');
+  const [editEventEndTime, setEditEventEndTime] = useState('10:00');
+  const [editIsAllDay, setEditIsAllDay] = useState(false);
+  const [editEventLocation, setEditEventLocation] = useState('');
+  const [isDeleteEventConfirmOpen, setIsDeleteEventConfirmOpen] = useState(false);
+
+  // Selected Task (View / Edit from Calendar) state
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState('');
+  const [editTaskDesc, setEditTaskDesc] = useState('');
+  const [editTaskStatus, setEditTaskStatus] = useState<TaskStatus>('todo');
+  const [editTaskPriority, setEditTaskPriority] = useState<TaskPriority>('medium');
+  const [editTaskScheduledDate, setEditTaskScheduledDate] = useState('');
+  const [editTaskDueDate, setEditTaskDueDate] = useState('');
+  const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
 
   // Month intervals
   const monthStart = startOfMonth(currentDate);
@@ -1175,7 +1198,34 @@ const CalendarView: React.FC = () => {
     else if (viewMode === 'week') setCurrentDate(addWeeks(currentDate, 1));
   };
 
-  const handleSaveEvent = async (e: React.FormEvent) => {
+  // Open item modal depending on whether it's an independent event or a task
+  const handleItemClick = (item: CalendarItem) => {
+    if (item.type === 'event' && item.rawEvent) {
+      const ev = item.rawEvent;
+      setSelectedEvent(ev);
+      setEditEventTitle(ev.title);
+      setEditEventDesc(ev.description || '');
+      const datePart = ev.start_time.split('T')[0];
+      const startTimePart = ev.start_time.includes('T') ? ev.start_time.split('T')[1].substring(0, 5) : '09:00';
+      const endTimePart = ev.end_time.includes('T') ? ev.end_time.split('T')[1].substring(0, 5) : '10:00';
+      setEditEventDate(datePart);
+      setEditEventStartTime(startTimePart);
+      setEditEventEndTime(endTimePart);
+      setEditIsAllDay(ev.is_all_day);
+      setEditEventLocation(ev.location || '');
+    } else if (item.rawTask) {
+      const t = item.rawTask;
+      setSelectedTask(t);
+      setEditTaskTitle(t.title);
+      setEditTaskDesc(t.description || '');
+      setEditTaskStatus(t.status);
+      setEditTaskPriority(t.priority);
+      setEditTaskScheduledDate(t.scheduled_date || '');
+      setEditTaskDueDate(t.due_date || '');
+    }
+  };
+
+  const handleSaveNewEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventTitle.trim()) return;
 
@@ -1200,6 +1250,61 @@ const CalendarView: React.FC = () => {
     setEventDesc('');
   };
 
+  const handleUpdateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEvent || !editEventTitle.trim()) return;
+
+    const startIso = editIsAllDay
+      ? `${editEventDate}T00:00:00Z`
+      : `${editEventDate}T${editEventStartTime}:00`;
+    const endIso = editIsAllDay
+      ? `${editEventDate}T23:59:59Z`
+      : `${editEventDate}T${editEventEndTime}:00`;
+
+    await updateEvent.mutateAsync({
+      id: selectedEvent.id,
+      title: editEventTitle.trim(),
+      description: editEventDesc.trim() || null,
+      start_time: startIso,
+      end_time: endIso,
+      is_all_day: editIsAllDay,
+      location: editEventLocation.trim() || null,
+    });
+
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteSelectedEvent = async () => {
+    if (!selectedEvent) return;
+    await deleteEvent.mutateAsync(selectedEvent.id);
+    setSelectedEvent(null);
+    setIsDeleteEventConfirmOpen(false);
+  };
+
+  const handleUpdateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTask || !editTaskTitle.trim()) return;
+
+    await updateTask.mutateAsync({
+      id: selectedTask.id,
+      title: editTaskTitle.trim(),
+      description: editTaskDesc.trim() || null,
+      status: editTaskStatus,
+      priority: editTaskPriority,
+      scheduled_date: editTaskScheduledDate || null,
+      due_date: editTaskDueDate || null,
+    });
+
+    setSelectedTask(null);
+  };
+
+  const handleDeleteSelectedTask = async () => {
+    if (!selectedTask) return;
+    await deleteTask.mutateAsync(selectedTask.id);
+    setSelectedTask(null);
+    setIsDeleteTaskConfirmOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Calendar Header */}
@@ -1209,13 +1314,13 @@ const CalendarView: React.FC = () => {
             {format(currentDate, 'MMMM yyyy')}
           </h3>
           <div className="flex items-center gap-1 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] p-0.5">
-            <button onClick={handlePrev} className="p-1 text-[#858176] hover:text-[#242424]">
+            <button onClick={handlePrev} className="p-1 text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-2 py-0.5 text-xs text-[#858176] hover:text-[#242424]">
+            <button onClick={() => setCurrentDate(new Date())} className="px-2 py-0.5 text-xs text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
               Today
             </button>
-            <button onClick={handleNext} className="p-1 text-[#858176] hover:text-[#242424]">
+            <button onClick={handleNext} className="p-1 text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -1231,7 +1336,7 @@ const CalendarView: React.FC = () => {
                 className={`px-3 py-1 rounded capitalize transition-colors ${
                   viewMode === m
                     ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614] font-medium'
-                    : 'text-[#858176] hover:text-[#242424]'
+                    : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
                 }`}
               >
                 {m}
@@ -1271,7 +1376,7 @@ const CalendarView: React.FC = () => {
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[90px] p-1.5 border-b border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 flex flex-col ${
+                  className={`min-h-[96px] p-1.5 border-b border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 flex flex-col ${
                     !isCurrMonth ? 'bg-[#F5F3ED]/40 dark:bg-[#171614]/40 text-[#858176]/50' : ''
                   }`}
                 >
@@ -1287,19 +1392,21 @@ const CalendarView: React.FC = () => {
 
                   <div className="space-y-1 overflow-y-auto flex-1">
                     {itemsForDay.map((item) => (
-                      <div
+                      <button
                         key={item.id}
-                        className={`text-[10px] p-1 rounded leading-tight truncate ${
+                        type="button"
+                        onClick={() => handleItemClick(item)}
+                        className={`w-full text-left text-[10px] p-1 rounded leading-tight truncate cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
                           item.type === 'event'
-                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3]'
+                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
                             : item.type === 'task_deadline'
-                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400'
-                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7]'
+                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 hover:ring-1 hover:ring-red-400/50'
+                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7] hover:ring-1 hover:ring-[#7B8D7A]/50'
                         }`}
-                        title={item.title}
+                        title={`${item.title} (Click to view/edit)`}
                       >
                         {item.title}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1336,19 +1443,22 @@ const CalendarView: React.FC = () => {
                     <span className="text-[11px] text-[#858176]/60 italic">Free day</span>
                   ) : (
                     itemsForDay.map((item) => (
-                      <div
+                      <button
                         key={item.id}
-                        className={`text-xs p-1.5 rounded ${
+                        type="button"
+                        onClick={() => handleItemClick(item)}
+                        className={`w-full text-left text-xs p-1.5 rounded cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
                           item.type === 'event'
-                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3]'
+                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
                             : item.type === 'task_deadline'
-                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400'
-                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7]'
+                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 hover:ring-1 hover:ring-red-400/50'
+                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7] hover:ring-1 hover:ring-[#7B8D7A]/50'
                         }`}
+                        title="Click to view/edit"
                       >
                         <div className="font-medium truncate">{item.title}</div>
-                        {item.time && <div className="text-[10px] opacity-75">{item.time}</div>}
-                      </div>
+                        {item.time && <div className="text-[10px] opacity-75 font-mono">{item.time}</div>}
+                      </button>
                     ))
                   )}
                 </div>
@@ -1367,12 +1477,15 @@ const CalendarView: React.FC = () => {
             unifiedItems.map((item) => (
               <div
                 key={item.id}
-                className="p-3.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle flex items-center justify-between"
+                onClick={() => handleItemClick(item)}
+                className="p-3.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle flex items-center justify-between cursor-pointer hover:border-[#9B8963] transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <CalendarIcon className="w-4 h-4 text-[#9B8963]" />
                   <div>
-                    <div className="text-sm font-medium text-[#242424] dark:text-[#EAE7DF]">{item.title}</div>
+                    <div className="text-sm font-medium text-[#242424] dark:text-[#EAE7DF] group-hover:text-[#9B8963] transition-colors">
+                      {item.title}
+                    </div>
                     <div className="text-xs text-[#858176] font-mono">
                       {item.date} {item.time && `• ${item.time}`}
                     </div>
@@ -1383,14 +1496,9 @@ const CalendarView: React.FC = () => {
                   <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F5F3ED] dark:bg-[#2A2824] text-[#858176]">
                     {item.type.replace('_', ' ')}
                   </span>
-                  {item.rawEvent && (
-                    <button
-                      onClick={() => deleteEvent.mutate(item.rawEvent!.id)}
-                      className="p-1 text-[#858176] hover:text-red-600"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <span className="text-xs text-[#858176] group-hover:text-[#242424] dark:group-hover:text-[#EAE7DF] px-2 py-1 border border-[#E5E1D8] dark:border-[#2E2C28] rounded">
+                    Edit →
+                  </span>
                 </div>
               </div>
             ))
@@ -1398,7 +1506,9 @@ const CalendarView: React.FC = () => {
         </div>
       )}
 
-      {/* New Event Modal */}
+      {/* ------------------------------------------------------------- */}
+      {/* Create Event Modal */}
+      {/* ------------------------------------------------------------- */}
       <Modal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
@@ -1406,7 +1516,7 @@ const CalendarView: React.FC = () => {
         subtitle="Independent event (will not duplicate task data)."
         maxWidth="md"
       >
-        <form onSubmit={handleSaveEvent} className="space-y-4">
+        <form onSubmit={handleSaveNewEvent} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Event Title *</label>
             <input
@@ -1496,6 +1606,244 @@ const CalendarView: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Edit / View Event Modal */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title="Event Details & Edit"
+        subtitle="Update event timeline, location, or notes."
+        maxWidth="md"
+      >
+        <form onSubmit={handleUpdateEvent} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Event Title *</label>
+            <input
+              type="text"
+              required
+              value={editEventTitle}
+              onChange={(e) => setEditEventTitle(e.target.value)}
+              className="w-full p-2 text-sm bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] focus:outline-none focus:border-[#9B8963]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Date</label>
+              <input
+                type="date"
+                required
+                value={editEventDate}
+                onChange={(e) => setEditEventDate(e.target.value)}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Location</label>
+              <input
+                type="text"
+                value={editEventLocation}
+                onChange={(e) => setEditEventLocation(e.target.value)}
+                placeholder="Office, Zoom, Home..."
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-[#242424] dark:text-[#EAE7DF]">
+            <input
+              type="checkbox"
+              checked={editIsAllDay}
+              onChange={(e) => setEditIsAllDay(e.target.checked)}
+              className="rounded"
+            />
+            <span>All-day event</span>
+          </label>
+
+          {!editIsAllDay && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Start Time</label>
+                <input
+                  type="time"
+                  value={editEventStartTime}
+                  onChange={(e) => setEditEventStartTime(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">End Time</label>
+                <input
+                  type="time"
+                  value={editEventEndTime}
+                  onChange={(e) => setEditEventEndTime(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Description</label>
+            <textarea
+              rows={3}
+              value={editEventDesc}
+              onChange={(e) => setEditEventDesc(e.target.value)}
+              placeholder="Notes, agenda, or reminders..."
+              className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
+            <button
+              type="button"
+              onClick={() => setIsDeleteEventConfirmOpen(true)}
+              className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Event
+            </button>
+
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedEvent(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" size="sm">
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Event Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteEventConfirmOpen}
+        onClose={() => setIsDeleteEventConfirmOpen(false)}
+        onConfirm={handleDeleteSelectedEvent}
+        title="Delete Calendar Event"
+        message="Are you sure you want to delete this event? This action cannot be undone."
+        confirmLabel="Delete"
+        isDestructive={true}
+      />
+
+      {/* ------------------------------------------------------------- */}
+      {/* Edit / View Task Modal (for scheduled tasks clicked from Calendar) */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        title="Task Details & Edit"
+        subtitle="Manage scheduled dates, deadlines, priority, and status."
+        maxWidth="md"
+      >
+        <form onSubmit={handleUpdateTask} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Task Title *</label>
+            <input
+              type="text"
+              required
+              value={editTaskTitle}
+              onChange={(e) => setEditTaskTitle(e.target.value)}
+              className="w-full p-2 text-sm bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] focus:outline-none focus:border-[#9B8963]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Status</label>
+              <select
+                value={editTaskStatus}
+                onChange={(e) => setEditTaskStatus(e.target.value as TaskStatus)}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              >
+                <option value="todo" className="bg-[#FFFFFF] dark:bg-[#21201D]">To Do</option>
+                <option value="in_progress" className="bg-[#FFFFFF] dark:bg-[#21201D]">In Progress</option>
+                <option value="completed" className="bg-[#FFFFFF] dark:bg-[#21201D]">Completed</option>
+                <option value="cancelled" className="bg-[#FFFFFF] dark:bg-[#21201D]">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Priority</label>
+              <select
+                value={editTaskPriority}
+                onChange={(e) => setEditTaskPriority(e.target.value as TaskPriority)}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              >
+                <option value="low" className="bg-[#FFFFFF] dark:bg-[#21201D]">Low</option>
+                <option value="medium" className="bg-[#FFFFFF] dark:bg-[#21201D]">Medium</option>
+                <option value="high" className="bg-[#FFFFFF] dark:bg-[#21201D]">High</option>
+                <option value="urgent" className="bg-[#FFFFFF] dark:bg-[#21201D]">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Scheduled Date</label>
+              <input
+                type="date"
+                value={editTaskScheduledDate}
+                onChange={(e) => setEditTaskScheduledDate(e.target.value)}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Due Date</label>
+              <input
+                type="date"
+                value={editTaskDueDate}
+                onChange={(e) => setEditTaskDueDate(e.target.value)}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Description / Notes</label>
+            <textarea
+              rows={3}
+              value={editTaskDesc}
+              onChange={(e) => setEditTaskDesc(e.target.value)}
+              placeholder="Context, sub-tasks, or notes..."
+              className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
+            <button
+              type="button"
+              onClick={() => setIsDeleteTaskConfirmOpen(true)}
+              className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Task
+            </button>
+
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedTask(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" size="sm">
+                Save Task
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Task Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteTaskConfirmOpen}
+        onClose={() => setIsDeleteTaskConfirmOpen(false)}
+        onConfirm={handleDeleteSelectedTask}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        isDestructive={true}
+      />
     </div>
   );
 };
