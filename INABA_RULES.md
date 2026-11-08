@@ -16,7 +16,7 @@
    - NO Productivity scores or vanity analytics dashboards.
    - NO AI chatbots or unnecessary generative bloat.
    - NO Social features, public profiles, or multi-tenant team collaboration.
-   - NO Complex recurring task automation matrices.
+   - NO Bloated automation matrices (keep recurring tasks minimal: clean daily/weekly/monthly auto-rollover on completion).
 3. **Calm Editorial Aesthetic**:
    - Editorial minimalism inspired by quiet Japanese workspaces and high-end print typography.
    - Avoid generic SaaS cards, neon accents, excessive icons, gradients, and decorative animations.
@@ -66,10 +66,10 @@ Navigation is strictly limited to 5 primary modules:
    - Mark as processed, archive, or soft delete with recovery.
 3. **Focus** (`/focus`):
    - **Today**: Top 3 priorities and tasks scheduled for today.
-   - **Tasks**: Title, description, status (Todo/In Progress/Completed), priority (Low/Medium/High), due date, scheduled date, linked project, linked area, today priority flag.
+   - **Calendar**: Month, Week, and List views. Interactive view & edit modal for independent events and scheduled tasks. Integrates task dates without data duplication.
+   - **Tasks**: Title, description, status (Todo/In Progress/Completed), priority (Low/Medium/High), recurrence (None/Daily/Weekly/Monthly with auto-rollover), due date, scheduled date, linked project, linked area, today priority flag.
    - **Projects**: Name, description, goal, linked area, status (Active/Paused/Completed), start date, target date; view associated tasks and notes.
    - **Areas**: Ongoing life domains (e.g., Work, Personal, Health, Learning, Finance, Relationships). Editable, reorderable.
-   - **Calendar**: Month, Week, and List views. Integrates task scheduled dates and deadlines without duplicating data, plus independent calendar events.
 4. **Library** (`/library`):
    - Personal knowledge repository with 4 note types: `Knowledge`, `Idea`, `Reference`, `Principle`.
    - Rich Markdown / TipTap editor with auto-save and status indicator (Saving / Saved / Error).
@@ -97,7 +97,7 @@ All user-owned tables MUST have `user_id uuid references auth.users(id)` and Row
 1. `profiles`: `id (uuid pk -> auth.users)`, `full_name`, `avatar_url`, `created_at`, `updated_at`.
 2. `areas`: `id (uuid pk)`, `user_id`, `name`, `description`, `color`, `sort_order`, `is_archived`, timestamps.
 3. `projects`: `id (uuid pk)`, `user_id`, `area_id (fk)`, `name`, `description`, `goal`, `status ('active'|'paused'|'completed')`, `start_date`, `target_date`, `is_archived`, timestamps.
-4. `tasks`: `id (uuid pk)`, `user_id`, `project_id (fk)`, `area_id (fk)`, `title`, `description`, `status ('todo'|'in_progress'|'completed')`, `priority ('low'|'medium'|'high')`, `due_date`, `scheduled_date`, `is_today_priority (bool)`, `completed_at`, `archived_at`, timestamps.
+4. `tasks`: `id (uuid pk)`, `user_id`, `project_id (fk)`, `area_id (fk)`, `title`, `description`, `status ('todo'|'in_progress'|'completed')`, `priority ('low'|'medium'|'high')`, `recurrence ('daily'|'weekly'|'monthly'|null)`, `due_date`, `scheduled_date`, `is_today_priority (bool)`, `completed_at`, `archived_at`, `is_archived (bool)`, timestamps.
 5. `notes`: `id (uuid pk)`, `user_id`, `project_id (fk)`, `area_id (fk)`, `title`, `content (text/markdown)`, `note_type ('knowledge'|'idea'|'reference'|'principle')`, `tags (text[])`, `is_archived`, timestamps.
 6. `inbox_items`: `id (uuid pk)`, `user_id`, `content`, `source_url`, `is_processed`, `converted_to_type ('task'|'note'|null)`, `converted_to_id (uuid|null)`, `is_archived`, timestamps.
 7. `reflections`: `id (uuid pk)`, `user_id`, `reflection_type ('journal'|'weekly_review'|'circle_of_control')`, `title`, `content (jsonb/text)`, `entry_date`, timestamps.
