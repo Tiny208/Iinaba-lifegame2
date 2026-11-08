@@ -125,3 +125,11 @@ All user-owned tables MUST have `user_id uuid references auth.users(id)` and Row
 - Safe deletions: Confirm destructive actions; archive over hard delete where appropriate.
 - Auto-save for notes and journal entries with visual feedback (`Saved` / `Saving...` / `Error`).
 - Full keyboard accessibility: `Cmd+K` for global search, `Q` for quick capture, `Esc` to dismiss modals.
+
+---
+
+## 7. ENGINEERING & WORKFLOW RULES: GRAPHIFY-FIRST & TOKEN OPTIMIZATION
+
+1. **Graphify-First Exploration**: Before modifying, refactoring, or researching any code or architecture, the AI agent MUST consult `graphify-out/` (via `graphify query`, `graph.json`, or `GRAPH_REPORT.md`) to locate the exact node, file path, and dependency chain.
+2. **Token Conservation**: Never read full, multi-hundred-line files blindly or run expansive exploratory scans. Always constrain file reading to precise `StartLine` and `EndLine` ranges determined by the graph.
+3. **Graph Synchronization**: Whenever new tables, hooks, or pages are added or significantly modified, run incremental Graphify to keep the project knowledge graph current.
