@@ -1,6 +1,7 @@
 export type NoteType = 'knowledge' | 'idea' | 'reference' | 'principle';
 export type TaskStatus = 'todo' | 'in_progress' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskRecurrence = 'daily' | 'weekly' | 'monthly';
 export type ProjectStatus = 'active' | 'paused' | 'completed';
 export type ReflectionType = 'journal' | 'weekly_review' | 'circle_of_control';
 export type AttachmentParentType = 'inbox' | 'note' | 'task';
@@ -50,6 +51,7 @@ export interface Task {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  recurrence?: TaskRecurrence | null;
   due_date: string | null;
   scheduled_date: string | null;
   is_today_priority: boolean;

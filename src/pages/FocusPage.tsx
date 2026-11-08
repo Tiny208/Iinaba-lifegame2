@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Repeat,
 } from 'lucide-react';
 import {
   format,
@@ -40,7 +41,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StatusPill } from '@/components/common/StatusPill';
 import { EmptyState } from '@/components/common/EmptyState';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
-import { Task, Project, Area, TaskStatus, TaskPriority, ProjectStatus, CalendarEvent } from '@/types/database';
+import { Task, Project, Area, TaskStatus, TaskPriority, TaskRecurrence, ProjectStatus, CalendarEvent } from '@/types/database';
 import { formatDate, formatRelativeDate } from '@/lib/utils';
 
 type FocusTab = 'today' | 'calendar' | 'tasks' | 'projects' | 'areas';
@@ -211,6 +212,7 @@ const TasksView: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formPriority, setFormPriority] = useState<TaskPriority>('medium');
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo');
+  const [formRecurrence, setFormRecurrence] = useState<TaskRecurrence | ''>('');
   const [formDueDate, setFormDueDate] = useState('');
   const [formScheduledDate, setFormScheduledDate] = useState('');
   const [formProjectId, setFormProjectId] = useState('');
@@ -223,6 +225,7 @@ const TasksView: React.FC = () => {
     setFormDescription('');
     setFormPriority('medium');
     setFormStatus('todo');
+    setFormRecurrence('');
     setFormDueDate('');
     setFormScheduledDate('');
     setFormProjectId(projectFilter !== 'all' ? projectFilter : '');
@@ -237,6 +240,7 @@ const TasksView: React.FC = () => {
     setFormDescription(task.description || '');
     setFormPriority(task.priority);
     setFormStatus(task.status);
+    setFormRecurrence(task.recurrence || '');
     setFormDueDate(task.due_date ? task.due_date.split('T')[0] : '');
     setFormScheduledDate(task.scheduled_date || '');
     setFormProjectId(task.project_id || '');
@@ -256,6 +260,7 @@ const TasksView: React.FC = () => {
         description: formDescription.trim() || null,
         priority: formPriority,
         status: formStatus,
+        recurrence: formRecurrence || null,
         due_date: formDueDate || null,
         scheduled_date: formScheduledDate || null,
         project_id: formProjectId || null,
@@ -268,6 +273,7 @@ const TasksView: React.FC = () => {
         description: formDescription.trim() || null,
         priority: formPriority,
         status: formStatus,
+        recurrence: formRecurrence || null,
         due_date: formDueDate || null,
         scheduled_date: formScheduledDate || null,
         project_id: formProjectId || null,
@@ -400,7 +406,7 @@ const TasksView: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-[#858176] mb-1">Status</label>
               <select
@@ -408,9 +414,9 @@ const TasksView: React.FC = () => {
                 onChange={(e) => setFormStatus(e.target.value as TaskStatus)}
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               >
-                <option value="todo">Todo</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="todo" className="bg-[#FFFFFF] dark:bg-[#21201D]">Todo</option>
+                <option value="in_progress" className="bg-[#FFFFFF] dark:bg-[#21201D]">In Progress</option>
+                <option value="completed" className="bg-[#FFFFFF] dark:bg-[#21201D]">Completed</option>
               </select>
             </div>
 
@@ -421,9 +427,23 @@ const TasksView: React.FC = () => {
                 onChange={(e) => setFormPriority(e.target.value as TaskPriority)}
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low" className="bg-[#FFFFFF] dark:bg-[#21201D]">Low</option>
+                <option value="medium" className="bg-[#FFFFFF] dark:bg-[#21201D]">Medium</option>
+                <option value="high" className="bg-[#FFFFFF] dark:bg-[#21201D]">High</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Repeat (Lặp lại)</label>
+              <select
+                value={formRecurrence}
+                onChange={(e) => setFormRecurrence(e.target.value as TaskRecurrence | '')}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              >
+                <option value="" className="bg-[#FFFFFF] dark:bg-[#21201D]">None (Không)</option>
+                <option value="daily" className="bg-[#FFFFFF] dark:bg-[#21201D]">Daily (Hàng ngày)</option>
+                <option value="weekly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Weekly (Hàng tuần)</option>
+                <option value="monthly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Monthly (Hàng tháng)</option>
               </select>
             </div>
           </div>
@@ -561,6 +581,12 @@ const TaskRow: React.FC<{
               </span>
             )}
             {task.area && <span>{task.area.name}</span>}
+            {task.recurrence && (
+              <span className="flex items-center gap-1 font-mono text-[#9B8963] bg-[#9B8963]/10 dark:bg-[#9B8963]/20 px-1.5 py-0.5 rounded capitalize" title={`Repeats ${task.recurrence}`}>
+                <Repeat className="w-3 h-3" />
+                {task.recurrence}
+              </span>
+            )}
             {task.scheduled_date && <span>Sched: {task.scheduled_date}</span>}
             {task.due_date && <span>Due: {formatRelativeDate(task.due_date)}</span>}
           </div>
@@ -1172,6 +1198,7 @@ const CalendarView: React.FC = () => {
   const [editTaskDesc, setEditTaskDesc] = useState('');
   const [editTaskStatus, setEditTaskStatus] = useState<TaskStatus>('todo');
   const [editTaskPriority, setEditTaskPriority] = useState<TaskPriority>('medium');
+  const [editTaskRecurrence, setEditTaskRecurrence] = useState<TaskRecurrence | ''>('');
   const [editTaskScheduledDate, setEditTaskScheduledDate] = useState('');
   const [editTaskDueDate, setEditTaskDueDate] = useState('');
   const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
@@ -1220,6 +1247,7 @@ const CalendarView: React.FC = () => {
       setEditTaskDesc(t.description || '');
       setEditTaskStatus(t.status);
       setEditTaskPriority(t.priority);
+      setEditTaskRecurrence(t.recurrence || '');
       setEditTaskScheduledDate(t.scheduled_date || '');
       setEditTaskDueDate(t.due_date || '');
     }
@@ -1291,6 +1319,7 @@ const CalendarView: React.FC = () => {
       description: editTaskDesc.trim() || null,
       status: editTaskStatus,
       priority: editTaskPriority,
+      recurrence: editTaskRecurrence || null,
       scheduled_date: editTaskScheduledDate || null,
       due_date: editTaskDueDate || null,
     });
@@ -1751,7 +1780,7 @@ const CalendarView: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-[#858176] mb-1">Status</label>
               <select
@@ -1776,6 +1805,19 @@ const CalendarView: React.FC = () => {
                 <option value="medium" className="bg-[#FFFFFF] dark:bg-[#21201D]">Medium</option>
                 <option value="high" className="bg-[#FFFFFF] dark:bg-[#21201D]">High</option>
                 <option value="urgent" className="bg-[#FFFFFF] dark:bg-[#21201D]">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#858176] mb-1">Repeat (Lặp lại)</label>
+              <select
+                value={editTaskRecurrence}
+                onChange={(e) => setEditTaskRecurrence(e.target.value as TaskRecurrence | '')}
+                className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+              >
+                <option value="" className="bg-[#FFFFFF] dark:bg-[#21201D]">None (Không)</option>
+                <option value="daily" className="bg-[#FFFFFF] dark:bg-[#21201D]">Daily (Hàng ngày)</option>
+                <option value="weekly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Weekly (Hàng tuần)</option>
+                <option value="monthly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Monthly (Hàng tháng)</option>
               </select>
             </div>
           </div>

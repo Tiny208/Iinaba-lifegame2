@@ -1,7 +1,93 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Task, TaskPriority, TaskStatus } from '@/types/database';
+import { Task, TaskPriority, TaskStatus, TaskRecurrence } from '@/types/database';
+import {
+  addDays,
+  addWeeks,
+  addMonths,
+  format,
+  startOfDay,
+  isBefore,
+} from 'date-fns';
+
+/**
+ * Calculates the next scheduled date (YYYY-MM-DD) for a recurring task.
+ * Ensures the next occurrence is always in the future relative to today.
+ */
+export function calculateNextScheduledDate(
+  recurrence: TaskRecurrence,
+  scheduledDate?: string | null
+): string {
+  const today = startOfDay(new Date());
+  let baseDate: Date;
+  if (scheduledDate) {
+    const [y, m, d] = scheduledDate.split('-').map(Number);
+    baseDate = new Date(y, m - 1, d);
+  } else {
+    baseDate = today;
+  }
+
+  let next: Date;
+  if (recurrence === 'daily') {
+    next = addDays(baseDate, 1);
+    if (isBefore(startOfDay(next), addDays(today, 1))) {
+      next = addDays(today, 1);
+    }
+  } else if (recurrence === 'weekly') {
+    next = addWeeks(baseDate, 1);
+    if (isBefore(startOfDay(next), today)) {
+      next = addWeeks(today, 1);
+    }
+  } else if (recurrence === 'monthly') {
+    next = addMonths(baseDate, 1);
+    if (isBefore(startOfDay(next), today)) {
+      next = addMonths(today, 1);
+    }
+  } else {
+    next = addDays(today, 1);
+  }
+
+  return format(next, 'yyyy-MM-dd');
+}
+
+/**
+ * Calculates the next due date (ISO string) for a recurring task, preserving time.
+ */
+export function calculateNextDueDate(
+  recurrence: TaskRecurrence,
+  dueDateStr?: string | null
+): string | null {
+  if (!dueDateStr) return null;
+  const today = startOfDay(new Date());
+  const baseDate = new Date(dueDateStr);
+  if (isNaN(baseDate.getTime())) return null;
+
+  let next: Date;
+  if (recurrence === 'daily') {
+    next = addDays(baseDate, 1);
+    if (isBefore(startOfDay(next), addDays(today, 1))) {
+      const timeMs = baseDate.getTime() - startOfDay(baseDate).getTime();
+      next = new Date(addDays(today, 1).getTime() + timeMs);
+    }
+  } else if (recurrence === 'weekly') {
+    next = addWeeks(baseDate, 1);
+    if (isBefore(startOfDay(next), today)) {
+      const timeMs = baseDate.getTime() - startOfDay(baseDate).getTime();
+      next = new Date(addWeeks(today, 1).getTime() + timeMs);
+    }
+  } else if (recurrence === 'monthly') {
+    next = addMonths(baseDate, 1);
+    if (isBefore(startOfDay(next), today)) {
+      const timeMs = baseDate.getTime() - startOfDay(baseDate).getTime();
+      next = new Date(addMonths(today, 1).getTime() + timeMs);
+    }
+  } else {
+    return null;
+  }
+
+  return next.toISOString();
+}
 
 export function useTasks(filters?: {
   status?: TaskStatus;
@@ -49,6 +135,7 @@ export function useTasks(filters?: {
       description?: string | null;
       status?: TaskStatus;
       priority?: TaskPriority;
+      recurrence?: TaskRecurrence | null;
       due_date?: string | null;
       scheduled_date?: string | null;
       project_id?: string | null;
@@ -64,6 +151,7 @@ export function useTasks(filters?: {
           description: newTask.description?.trim() || null,
           status: newTask.status || 'todo',
           priority: newTask.priority || 'medium',
+          recurrence: newTask.recurrence || null,
           due_date: newTask.due_date || null,
           scheduled_date: newTask.scheduled_date || null,
           project_id: newTask.project_id || null,
@@ -78,6 +166,7 @@ export function useTasks(filters?: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks_calendar', user?.id] });
     },
   });
 
@@ -101,10 +190,49 @@ export function useTasks(filters?: {
         .single();
 
       if (error) throw error;
-      return data as Task;
+      const updatedTask = data as Task;
+
+      // When a recurring task is completed via edit modal:
+      // Archive old completed task and generate the next occurrence
+      if (updates.status === 'completed' && updatedTask.recurrence) {
+        await supabase
+          .from('tasks')
+          .update({
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+          })
+          .eq('id', updatedTask.id)
+          .eq('user_id', user.id);
+
+        const nextScheduledDate = updatedTask.scheduled_date
+          ? calculateNextScheduledDate(updatedTask.recurrence, updatedTask.scheduled_date)
+          : (!updatedTask.due_date ? calculateNextScheduledDate(updatedTask.recurrence, null) : null);
+
+        const nextDueDate = calculateNextDueDate(updatedTask.recurrence, updatedTask.due_date);
+
+        await supabase
+          .from('tasks')
+          .insert({
+            user_id: user.id,
+            title: updatedTask.title,
+            description: updatedTask.description,
+            status: 'todo',
+            priority: updatedTask.priority,
+            project_id: updatedTask.project_id,
+            area_id: updatedTask.area_id,
+            recurrence: updatedTask.recurrence,
+            scheduled_date: nextScheduledDate,
+            due_date: nextDueDate,
+            is_today_priority: false,
+            is_archived: false,
+          });
+      }
+
+      return updatedTask;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks_calendar', user?.id] });
     },
   });
 
@@ -114,6 +242,7 @@ export function useTasks(filters?: {
       const newStatus: TaskStatus = currentStatus === 'completed' ? 'todo' : 'completed';
       const completedAt = newStatus === 'completed' ? new Date().toISOString() : null;
 
+      // 1. Mark status
       const { data, error } = await supabase
         .from('tasks')
         .update({
@@ -126,10 +255,50 @@ export function useTasks(filters?: {
         .single();
 
       if (error) throw error;
-      return data as Task;
+      const updatedTask = data as Task;
+
+      // 2. If completing a recurring task:
+      // - Archive old completed task so it leaves active view ("task cũ sẽ mất")
+      // - Generate the next occurrence with new deadline ("thay vào đó là task y chang project và area, nhưng lại hiện deadline (ngày làm) mới")
+      if (newStatus === 'completed' && updatedTask.recurrence) {
+        await supabase
+          .from('tasks')
+          .update({
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+          })
+          .eq('id', updatedTask.id)
+          .eq('user_id', user.id);
+
+        const nextScheduledDate = updatedTask.scheduled_date
+          ? calculateNextScheduledDate(updatedTask.recurrence, updatedTask.scheduled_date)
+          : (!updatedTask.due_date ? calculateNextScheduledDate(updatedTask.recurrence, null) : null);
+
+        const nextDueDate = calculateNextDueDate(updatedTask.recurrence, updatedTask.due_date);
+
+        await supabase
+          .from('tasks')
+          .insert({
+            user_id: user.id,
+            title: updatedTask.title,
+            description: updatedTask.description,
+            status: 'todo',
+            priority: updatedTask.priority,
+            project_id: updatedTask.project_id,
+            area_id: updatedTask.area_id,
+            recurrence: updatedTask.recurrence,
+            scheduled_date: nextScheduledDate,
+            due_date: nextDueDate,
+            is_today_priority: false,
+            is_archived: false,
+          });
+      }
+
+      return updatedTask;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks_calendar', user?.id] });
     },
   });
 
@@ -166,6 +335,7 @@ export function useTasks(filters?: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks_calendar', user?.id] });
     },
   });
 

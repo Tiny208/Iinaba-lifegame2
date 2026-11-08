@@ -12,6 +12,7 @@ import {
   Plus,
   AlertTriangle,
   Calendar as CalendarIcon,
+  Repeat,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
@@ -400,6 +401,12 @@ const TaskItemRow: React.FC<{ task: Task; onToggle: () => void }> = ({ task, onT
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        {task.recurrence && (
+          <span className="text-[10px] text-[#9B8963] font-mono flex items-center gap-1 bg-[#9B8963]/10 dark:bg-[#9B8963]/20 px-1.5 py-0.5 rounded capitalize" title={`Repeats ${task.recurrence}`}>
+            <Repeat className="w-3 h-3" />
+            {task.recurrence}
+          </span>
+        )}
         {task.project && (
           <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-wider text-[#858176] bg-[#F5F3ED] dark:bg-[#2A2824] px-1.5 py-0.5 rounded">
             {task.project.name}
