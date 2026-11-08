@@ -41,7 +41,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StatusPill } from '@/components/common/StatusPill';
 import { EmptyState } from '@/components/common/EmptyState';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
-import { Task, Project, Area, TaskStatus, TaskPriority, TaskRecurrence, ProjectStatus, CalendarEvent } from '@/types/database';
+import { Task, Project, Area, TaskStatus, TaskPriority, TaskRecurrence, EventRecurrence, ProjectStatus, CalendarEvent } from '@/types/database';
 import { formatDate, formatRelativeDate } from '@/lib/utils';
 
 type FocusTab = 'today' | 'calendar' | 'tasks' | 'projects' | 'areas';
@@ -1180,6 +1180,7 @@ const CalendarView: React.FC = () => {
   const [eventEndTime, setEventEndTime] = useState('10:00');
   const [isAllDay, setIsAllDay] = useState(false);
   const [eventLocation, setEventLocation] = useState('');
+  const [eventRecurrence, setEventRecurrence] = useState<EventRecurrence | ''>('');
 
   // Selected Event (View / Edit) state
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -1190,6 +1191,7 @@ const CalendarView: React.FC = () => {
   const [editEventEndTime, setEditEventEndTime] = useState('10:00');
   const [editIsAllDay, setEditIsAllDay] = useState(false);
   const [editEventLocation, setEditEventLocation] = useState('');
+  const [editEventRecurrence, setEditEventRecurrence] = useState<EventRecurrence | ''>('');
   const [isDeleteEventConfirmOpen, setIsDeleteEventConfirmOpen] = useState(false);
 
   // Selected Task (View / Edit from Calendar) state
@@ -1240,6 +1242,7 @@ const CalendarView: React.FC = () => {
       setEditEventEndTime(endTimePart);
       setEditIsAllDay(ev.is_all_day);
       setEditEventLocation(ev.location || '');
+      setEditEventRecurrence(ev.recurrence || '');
     } else if (item.rawTask) {
       const t = item.rawTask;
       setSelectedTask(t);
@@ -1271,11 +1274,13 @@ const CalendarView: React.FC = () => {
       end_time: endIso,
       is_all_day: isAllDay,
       location: eventLocation.trim() || undefined,
+      recurrence: eventRecurrence || null,
     });
 
     setIsEventModalOpen(false);
     setEventTitle('');
     setEventDesc('');
+    setEventRecurrence('');
   };
 
   const handleUpdateEvent = async (e: React.FormEvent) => {
@@ -1297,6 +1302,7 @@ const CalendarView: React.FC = () => {
       end_time: endIso,
       is_all_day: editIsAllDay,
       location: editEventLocation.trim() || null,
+      recurrence: editEventRecurrence || null,
     });
 
     setSelectedEvent(null);
@@ -1486,7 +1492,9 @@ const CalendarView: React.FC = () => {
                         title="Click to view/edit"
                       >
                         <div className="font-medium truncate">{item.title}</div>
-                        {item.time && <div className="text-[10px] opacity-75 font-mono">{item.time}</div>}
+                        {item.type === 'event' && item.time && !item.allDay && (
+                          <div className="text-[10px] opacity-75 font-mono">{item.time}</div>
+                        )}
                       </button>
                     ))
                   )}
@@ -1516,7 +1524,7 @@ const CalendarView: React.FC = () => {
                       {item.title}
                     </div>
                     <div className="text-xs text-[#858176] font-mono">
-                      {item.date} {item.time && `• ${item.time}`}
+                      {item.date} {item.type === 'event' && item.time && !item.allDay && `• ${item.time}`}
                     </div>
                   </div>
                 </div>
@@ -1579,6 +1587,21 @@ const CalendarView: React.FC = () => {
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Repeat (Lặp lại)</label>
+            <select
+              value={eventRecurrence}
+              onChange={(e) => setEventRecurrence(e.target.value as EventRecurrence | '')}
+              className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+            >
+              <option value="" className="bg-[#FFFFFF] dark:bg-[#21201D]">Does not repeat (Không lặp lại)</option>
+              <option value="daily" className="bg-[#FFFFFF] dark:bg-[#21201D]">Daily (Hàng ngày)</option>
+              <option value="weekly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Weekly (Hàng tuần)</option>
+              <option value="monthly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Monthly (Hàng tháng)</option>
+              <option value="yearly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Yearly (Hàng năm - Sinh nhật, ngày kỷ niệm)</option>
+            </select>
           </div>
 
           <label className="flex items-center gap-2 text-xs text-[#242424] dark:text-[#EAE7DF]">
@@ -1679,6 +1702,21 @@ const CalendarView: React.FC = () => {
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#858176] mb-1">Repeat (Lặp lại)</label>
+            <select
+              value={editEventRecurrence}
+              onChange={(e) => setEditEventRecurrence(e.target.value as EventRecurrence | '')}
+              className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+            >
+              <option value="" className="bg-[#FFFFFF] dark:bg-[#21201D]">Does not repeat (Không lặp lại)</option>
+              <option value="daily" className="bg-[#FFFFFF] dark:bg-[#21201D]">Daily (Hàng ngày)</option>
+              <option value="weekly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Weekly (Hàng tuần)</option>
+              <option value="monthly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Monthly (Hàng tháng)</option>
+              <option value="yearly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Yearly (Hàng năm - Sinh nhật, ngày kỷ niệm)</option>
+            </select>
           </div>
 
           <label className="flex items-center gap-2 text-xs text-[#242424] dark:text-[#EAE7DF]">

@@ -1,7 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { CalendarEvent, Task } from '@/types/database';
+import { CalendarEvent, Task, EventRecurrence } from '@/types/database';
+import {
+  subMonths,
+  addMonths,
+  addWeeks,
+  addDays,
+  getDaysInMonth,
+  startOfDay,
+  endOfDay,
+  format,
+} from 'date-fns';
 
 export interface CalendarItem {
   id: string;
@@ -9,7 +19,7 @@ export interface CalendarItem {
   title: string;
   description?: string | null;
   date: string; // YYYY-MM-DD
-  time?: string; // HH:mm
+  time?: string; // HH:mm (only for events)
   allDay?: boolean;
   rawEvent?: CalendarEvent;
   rawTask?: Task;
@@ -70,6 +80,7 @@ export function useCalendar(startDate?: string, endDate?: string) {
       end_time: string;
       is_all_day?: boolean;
       location?: string;
+      recurrence?: EventRecurrence | null;
     }) => {
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
@@ -82,6 +93,7 @@ export function useCalendar(startDate?: string, endDate?: string) {
           end_time: newEvent.end_time,
           is_all_day: newEvent.is_all_day || false,
           location: newEvent.location?.trim() || null,
+          recurrence: newEvent.recurrence || null,
         })
         .select()
         .single();
@@ -133,19 +145,122 @@ export function useCalendar(startDate?: string, endDate?: string) {
   // Combine independent events + task scheduled dates + task deadlines into a unified view
   const unifiedItems: CalendarItem[] = [];
 
+  // Active horizon for recurring events expansion: -6 months to +18 months
+  const now = new Date();
+  const windowStart = subMonths(now, 6);
+  const windowEnd = addMonths(now, 18);
+
   (eventsQuery.data || []).forEach((ev) => {
-    const datePart = ev.start_time.split('T')[0];
-    const timePart = ev.start_time.includes('T') ? ev.start_time.split('T')[1].substring(0, 5) : '';
-    unifiedItems.push({
-      id: `event-${ev.id}`,
-      type: 'event',
-      title: ev.title,
-      description: ev.description,
-      date: datePart,
-      time: timePart,
-      allDay: ev.is_all_day,
-      rawEvent: ev,
-    });
+    const timePart = !ev.is_all_day && ev.start_time.includes('T')
+      ? ev.start_time.split('T')[1].substring(0, 5)
+      : undefined;
+
+    if (!ev.recurrence) {
+      // Single one-time event
+      const datePart = ev.start_time.split('T')[0];
+      unifiedItems.push({
+        id: `event-${ev.id}`,
+        type: 'event',
+        title: ev.title,
+        description: ev.description,
+        date: datePart,
+        time: timePart,
+        allDay: ev.is_all_day,
+        rawEvent: ev,
+      });
+      return;
+    }
+
+    // Recurring events: Expand across active window
+    const [origYear, origMonth, origDay] = ev.start_time.split('T')[0].split('-').map(Number);
+    const origDate = new Date(origYear, origMonth - 1, origDay);
+
+    if (ev.recurrence === 'yearly') {
+      // Perfect for birthdays and anniversaries
+      const startY = windowStart.getFullYear();
+      const endY = windowEnd.getFullYear();
+      for (let y = startY; y <= endY; y++) {
+        const maxDays = getDaysInMonth(new Date(y, origMonth - 1, 1));
+        const clampedDay = Math.min(origDay, maxDays);
+        const occDate = new Date(y, origMonth - 1, clampedDay);
+        if (
+          occDate >= startOfDay(windowStart) &&
+          occDate <= endOfDay(windowEnd) &&
+          occDate >= startOfDay(origDate)
+        ) {
+          unifiedItems.push({
+            id: `event-${ev.id}-${y}`,
+            type: 'event',
+            title: ev.title,
+            description: ev.description,
+            date: format(occDate, 'yyyy-MM-dd'),
+            time: timePart,
+            allDay: ev.is_all_day,
+            rawEvent: ev,
+          });
+        }
+      }
+    } else if (ev.recurrence === 'monthly') {
+      let curr = new Date(windowStart.getFullYear(), windowStart.getMonth(), 1);
+      const end = new Date(windowEnd.getFullYear(), windowEnd.getMonth(), 1);
+      while (curr <= end) {
+        const y = curr.getFullYear();
+        const m = curr.getMonth();
+        const maxDays = getDaysInMonth(new Date(y, m, 1));
+        const clampedDay = Math.min(origDay, maxDays);
+        const occDate = new Date(y, m, clampedDay);
+        if (
+          occDate >= startOfDay(windowStart) &&
+          occDate <= endOfDay(windowEnd) &&
+          occDate >= startOfDay(origDate)
+        ) {
+          unifiedItems.push({
+            id: `event-${ev.id}-${format(occDate, 'yyyy-MM')}`,
+            type: 'event',
+            title: ev.title,
+            description: ev.description,
+            date: format(occDate, 'yyyy-MM-dd'),
+            time: timePart,
+            allDay: ev.is_all_day,
+            rawEvent: ev,
+          });
+        }
+        curr = addMonths(curr, 1);
+      }
+    } else if (ev.recurrence === 'weekly') {
+      let curr = origDate;
+      while (curr < startOfDay(windowStart)) {
+        curr = addWeeks(curr, 1);
+      }
+      while (curr <= endOfDay(windowEnd)) {
+        unifiedItems.push({
+          id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
+          type: 'event',
+          title: ev.title,
+          description: ev.description,
+          date: format(curr, 'yyyy-MM-dd'),
+          time: timePart,
+          allDay: ev.is_all_day,
+          rawEvent: ev,
+        });
+        curr = addWeeks(curr, 1);
+      }
+    } else if (ev.recurrence === 'daily') {
+      let curr = origDate < startOfDay(windowStart) ? startOfDay(windowStart) : origDate;
+      while (curr <= endOfDay(windowEnd)) {
+        unifiedItems.push({
+          id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
+          type: 'event',
+          title: ev.title,
+          description: ev.description,
+          date: format(curr, 'yyyy-MM-dd'),
+          time: timePart,
+          allDay: ev.is_all_day,
+          rawEvent: ev,
+        });
+        curr = addDays(curr, 1);
+      }
+    }
   });
 
   (tasksCalendarQuery.data || []).forEach((task) => {
@@ -157,21 +272,23 @@ export function useCalendar(startDate?: string, endDate?: string) {
         description: task.description,
         date: task.scheduled_date,
         allDay: true,
+        // Tasks NEVER have time in Calendar
+        time: undefined,
         rawTask: task,
       });
     }
 
     if (task.due_date) {
       const datePart = task.due_date.split('T')[0];
-      const timePart = task.due_date.includes('T') ? task.due_date.split('T')[1].substring(0, 5) : '';
       unifiedItems.push({
         id: `task-due-${task.id}`,
         type: 'task_deadline',
         title: `Due: ${task.title}`,
         description: task.description,
         date: datePart,
-        time: timePart,
-        allDay: !task.due_date.includes('T'),
+        allDay: true,
+        // Tasks NEVER have time in Calendar
+        time: undefined,
         rawTask: task,
       });
     }

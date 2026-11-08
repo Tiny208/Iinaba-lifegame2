@@ -132,6 +132,8 @@ export interface Reflection {
   updated_at: string;
 }
 
+export type EventRecurrence = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
 export interface CalendarEvent {
   id: string;
   user_id: string;
@@ -141,6 +143,7 @@ export interface CalendarEvent {
   end_time: string;
   is_all_day: boolean;
   location: string | null;
+  recurrence?: EventRecurrence | null;
   created_at: string;
   updated_at: string;
 }
