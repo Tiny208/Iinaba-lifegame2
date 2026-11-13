@@ -1,6 +1,6 @@
 {
   "project-sleep-manager": {
-    "enabled": true,
+    "enabled": false,
     "PreInvocation": [
       {
         "type": "command",

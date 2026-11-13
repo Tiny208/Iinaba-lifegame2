@@ -1,8 +1,8 @@
 {
-  "enabled": true,
+  "enabled": false,
   "countdownSeconds": 25,
   "gracePeriodSeconds": 20,
   "monitorScope": "LifeGame2",
   "notify": true,
-  "autoSleepOnAgentStop": true
+  "autoSleepOnAgentStop": false
 }
