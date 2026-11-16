@@ -1,7 +1,7 @@
 # Graph Report - LifeGame2  (2026-11-16)
 
 ## Corpus Check
-- 57 files · ~32,445 words
+- 57 files · ~32,556 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 12 file(s) not represented in the graph (top: (none) 9, .example 1, .toml 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c0f9de7e`
+- Built from commit: `22cdfe72`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,25 +41,25 @@
 1. `useAuth()` - 44 edges
 2. `react` - 27 edges
 3. `Button` - 26 edges
-4. `lucide-react` - 17 edges
-5. `cn()` - 17 edges
+4. `cn()` - 17 edges
+5. `lucide-react` - 17 edges
 6. `compilerOptions` - 17 edges
 7. `EmptyState()` - 16 edges
 8. `CardSkeleton()` - 16 edges
-9. `Modal()` - 15 edges
-10. `HomePage()` - 15 edges
+9. `HomePage()` - 15 edges
+10. `Modal()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Core Module: Home & Today Priorities` --embodies--> `Philosophy: Stoicism & Anti-Overhead Minimalism`  [INFERRED]
   src/pages/HomePage.tsx → INABA_RULES.md
 - `INABA System Rules & Specifications` --architects--> `Supabase PostgreSQL Database Architecture & RLS`  [EXTRACTED]
   INABA_RULES.md → supabase/migrations/20261107000000_inaba_init.sql
-- `App()` --calls--> `FocusPage()`  [EXTRACTED]
-  src/App.tsx → src/pages/FocusPage.tsx
-- `App()` --calls--> `HomePage()`  [EXTRACTED]
-  src/App.tsx → src/pages/HomePage.tsx
-- `App()` --calls--> `InboxPage()`  [EXTRACTED]
-  src/App.tsx → src/pages/InboxPage.tsx
+- `AppLayout()` --calls--> `QuickCaptureModal()`  [EXTRACTED]
+  src/components/layout/AppLayout.tsx → src/components/common/QuickCaptureModal.tsx
+- `AppLayout()` --calls--> `useAuth()`  [EXTRACTED]
+  src/components/layout/AppLayout.tsx → src/context/AuthContext.tsx
+- `AppLayout()` --calls--> `isSupabaseConfigured()`  [EXTRACTED]
+  src/components/layout/AppLayout.tsx → src/lib/supabase.ts
 
 ## Import Cycles
 - None detected.
@@ -136,11 +136,11 @@ _Questions this graph is uniquely positioned to answer:_
   _8 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Database Schema & RLS` be split into smaller, more focused modules?**
   _Cohesion score 0.07330827067669173 - nodes in this community are weakly interconnected._
-- **Why does `@vitejs/plugin-react` connect `package.json` to `Node Platform & Build Tools`?**
+- **Why does `vite` connect `Node Platform & Build Tools` to `package.json`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `State Management & UI Components` be split into smaller, more focused modules?**
   _Cohesion score 0.10993657505285412 - nodes in this community are weakly interconnected._
-- **Why does `vite` connect `Node Platform & Build Tools` to `package.json`?**
+- **Why does `@vitejs/plugin-react` connect `package.json` to `Node Platform & Build Tools`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `Editorial Minimalist Reusable UI` be split into smaller, more focused modules?**
   _Cohesion score 0.12596153846153846 - nodes in this community are weakly interconnected._

@@ -90,32 +90,32 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-7">
       {/* Editorial Header */}
-      <section className="space-y-1.5 pb-2 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
+      <section className="space-y-1 pb-2 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
         <div className="text-xs uppercase tracking-widest text-[#858176] dark:text-[#8C877D] font-mono">
           {todayStr}
         </div>
         <h2 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-[#242424] dark:text-[#EAE7DF]">
           {greeting}
         </h2>
-        <p className="text-sm text-[#858176] dark:text-[#8C877D] font-serif italic">
+        <p className="text-xs sm:text-sm text-[#858176] dark:text-[#8C877D] font-serif italic mt-0.5">
           Focus on what is within your control. Release the rest.
         </p>
       </section>
 
       {/* Inbox Preview Pill (If items pending) */}
       {unprocessedCount > 0 && (
-        <div className="p-3.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] flex items-center justify-between shadow-subtle">
+        <div className="p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] flex items-center justify-between shadow-subtle">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded bg-[#9B8963]/10 text-[#9B8963]">
+            <div className="p-1.5 rounded bg-[#9B8963]/10 text-[#9B8963]">
               <Inbox className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-medium text-[#242424] dark:text-[#EAE7DF]">
+              <div className="text-sm font-medium text-[#242424] dark:text-[#EAE7DF] leading-snug">
                 {unprocessedCount} unprocessed {unprocessedCount === 1 ? 'item' : 'items'} in your Inbox
               </div>
-              <div className="text-xs text-[#858176] dark:text-[#8C877D]">
+              <div className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5">
                 Capture fast, organize deliberately.
               </div>
             </div>
@@ -130,17 +130,17 @@ export const HomePage: React.FC = () => {
       )}
 
       {/* Main Grid: Today Priorities & Upcoming */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
         {/* Left Column (2 cols): Priorities & Overdue */}
-        <div className="md:col-span-2 space-y-8">
+        <div className="md:col-span-2 space-y-4 sm:space-y-5">
           {/* Today Priorities Section */}
-          <section className="space-y-3">
+          <section className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">
                   Today&rsquo;s Priorities
                 </h3>
-                <p className="text-xs text-[#858176] dark:text-[#8C877D]">
+                <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5">
                   Maximum three essential commitments.
                 </p>
               </div>
@@ -199,7 +199,7 @@ export const HomePage: React.FC = () => {
                 }
               />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {todayPriorities.map((task) => (
                   <TaskItemRow
                     key={task.id}
@@ -218,12 +218,12 @@ export const HomePage: React.FC = () => {
 
           {/* Overdue Alert Section */}
           {overdueTasks.length > 0 && (
-            <section className="space-y-2 p-4 rounded-[4px] bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40">
+            <section className="space-y-1.5 p-3 rounded-[4px] bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40">
               <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-xs font-medium">
                 <AlertTriangle className="w-4 h-4" />
                 <span>Overdue Incomplete Tasks ({overdueTasks.length})</span>
               </div>
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1 pt-1">
                 {overdueTasks.slice(0, 3).map((task) => (
                   <div
                     key={task.id}
@@ -241,9 +241,9 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Right Column (1 col): Upcoming & Recent Notes */}
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-5">
           {/* Upcoming Events & Tasks */}
-          <section className="space-y-3">
+          <section className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">
                 Upcoming
@@ -257,17 +257,17 @@ export const HomePage: React.FC = () => {
             </div>
 
             {upcomingItems.length === 0 ? (
-              <div className="p-4 rounded-[4px] bg-[#FFFFFF]/60 dark:bg-[#21201D]/60 border border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs text-[#858176]">
+              <div className="p-3 rounded-[4px] bg-[#FFFFFF]/60 dark:bg-[#21201D]/60 border border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs text-[#858176]">
                 Nothing scheduled for the coming days.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {upcomingItems.map((item) => (
                   <div
                     key={item.id}
-                    className="p-2.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs shadow-subtle"
+                    className="p-2 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs shadow-subtle"
                   >
-                    <div className="flex items-center justify-between text-[#858176] mb-1 font-mono text-[10px]">
+                    <div className="flex items-center justify-between text-[#858176] mb-0.5 font-mono text-[10px]">
                       <span className="flex items-center gap-1">
                         <CalendarIcon className="w-3 h-3 text-[#9B8963]" />
                         {formatRelativeDate(item.date)}
@@ -284,7 +284,7 @@ export const HomePage: React.FC = () => {
           </section>
 
           {/* Recent Notes */}
-          <section className="space-y-3">
+          <section className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">
                 Recent Notes
@@ -300,16 +300,16 @@ export const HomePage: React.FC = () => {
             {notesLoading ? (
               <CardSkeleton rows={2} />
             ) : recentNotes.length === 0 ? (
-              <div className="p-4 rounded-[4px] bg-[#FFFFFF]/60 dark:bg-[#21201D]/60 border border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs text-[#858176]">
+              <div className="p-3 rounded-[4px] bg-[#FFFFFF]/60 dark:bg-[#21201D]/60 border border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs text-[#858176]">
                 No notes created yet.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {recentNotes.map((note) => (
                   <Link
                     key={note.id}
                     to={`/library?noteId=${note.id}`}
-                    className="p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] hover:border-[#9B8963] transition-colors block shadow-subtle"
+                    className="p-2.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] hover:border-[#9B8963] transition-colors block shadow-subtle"
                   >
                     <div className="flex items-start justify-between">
                       <span className="font-medium text-xs text-[#242424] dark:text-[#EAE7DF] truncate">
@@ -317,7 +317,7 @@ export const HomePage: React.FC = () => {
                       </span>
                       <BookOpen className="w-3.5 h-3.5 text-[#858176] flex-shrink-0 ml-2" />
                     </div>
-                    <div className="text-[10px] text-[#858176] mt-1 font-mono uppercase">
+                    <div className="text-[10px] text-[#858176] mt-0.5 font-mono uppercase">
                       {note.note_type} • {formatDate(note.updated_at, 'MMM d')}
                     </div>
                   </Link>
@@ -335,8 +335,8 @@ const TaskItemRow: React.FC<{ task: Task; onToggle: () => void }> = ({ task, onT
   const isCompleted = task.status === 'completed';
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle">
+      <div className="flex items-center gap-2.5 min-w-0">
         <button
           onClick={onToggle}
           className="text-[#858176] hover:text-[#9B8963] transition-colors flex-shrink-0"

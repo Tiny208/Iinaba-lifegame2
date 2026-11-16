@@ -119,12 +119,12 @@ export const InboxPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-5">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
         <div>
-          <div className="text-xs uppercase tracking-widest text-[#858176] font-mono">Capture & Process</div>
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-1">
+          <div className="text-[10px] uppercase tracking-widest text-[#858176] font-mono">Capture & Process</div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-0.5">
             Inbox
           </h2>
           <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5">
@@ -133,10 +133,10 @@ export const InboxPage: React.FC = () => {
         </div>
 
         {/* View toggle */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 text-xs">
           <button
             onClick={() => setShowProcessed(false)}
-            className={`px-3 py-1.5 rounded-[4px] font-medium transition-colors ${
+            className={`px-3 py-1 rounded-[3px] font-medium transition-colors ${
               !showProcessed
                 ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614]'
                 : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
@@ -146,7 +146,7 @@ export const InboxPage: React.FC = () => {
           </button>
           <button
             onClick={() => setShowProcessed(true)}
-            className={`px-3 py-1.5 rounded-[4px] font-medium transition-colors ${
+            className={`px-3 py-1 rounded-[3px] font-medium transition-colors ${
               showProcessed
                 ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614]'
                 : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
@@ -164,7 +164,7 @@ export const InboxPage: React.FC = () => {
           placeholder="Capture a thought, quote, link, or note to review later..."
           value={newItemText}
           onChange={(e) => setNewItemText(e.target.value)}
-          className="flex-1 p-3 text-sm bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/70 focus:outline-none focus:border-[#9B8963]"
+          className="flex-1 p-2.5 text-sm bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/70 focus:outline-none focus:border-[#9B8963]"
         />
         <Button type="submit" variant="primary" disabled={!newItemText.trim()}>
           Capture
@@ -181,7 +181,7 @@ export const InboxPage: React.FC = () => {
           description="Everything has been processed and organized into action or reference."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {items.map((item) => (
             <InboxCard
               key={item.id}
@@ -414,9 +414,9 @@ const InboxCard: React.FC<{
   const { attachments } = useAttachments('inbox', item.id);
 
   return (
-    <div className="p-4 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle space-y-3">
+    <div className="p-3 sm:p-3.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle space-y-2">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
+        <div className="flex items-start gap-2.5 min-w-0 flex-1">
           <button
             onClick={onToggle}
             className="text-[#858176] hover:text-[#9B8963] transition-colors mt-0.5"
@@ -430,7 +430,7 @@ const InboxCard: React.FC<{
           </button>
           <div className="flex-1 min-w-0">
             <p
-              className={`text-sm leading-relaxed whitespace-pre-wrap ${
+              className={`text-sm leading-normal whitespace-pre-wrap ${
                 item.is_processed
                   ? 'text-[#858176] dark:text-[#8C877D]'
                   : 'text-[#242424] dark:text-[#EAE7DF]'

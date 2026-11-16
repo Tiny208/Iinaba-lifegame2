@@ -83,12 +83,12 @@ export const LibraryPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5 sm:space-y-4">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
         <div>
-          <div className="text-xs uppercase tracking-widest text-[#858176] font-mono">Knowledge & Principles</div>
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-1">
+          <div className="text-[10px] uppercase tracking-widest text-[#858176] font-mono">Knowledge & Principles</div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-0.5">
             Library
           </h2>
           <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5">
@@ -103,15 +103,15 @@ export const LibraryPage: React.FC = () => {
       </div>
 
       {createNoteError && (
-        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+        <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
           {createNoteError}
         </div>
       )}
 
       {/* Main Two-Column Library Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
         {/* Left Column (4 cols on lg): Note List & Filters */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-2.5">
           {/* Note Type Filters */}
           <div className="flex items-center gap-1 bg-[#FFFFFF] dark:bg-[#21201D] p-1 rounded-[4px] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs font-medium overflow-x-auto">
             {(['all', 'knowledge', 'idea', 'reference', 'principle'] as const).map((t) => (
@@ -190,7 +190,7 @@ export const LibraryPage: React.FC = () => {
                   <div
                     key={note.id}
                     onClick={() => handleSelectNote(note.id)}
-                    className={`p-3 rounded-[4px] border cursor-pointer transition-all shadow-subtle ${
+                    className={`p-2.5 sm:p-3 rounded-[4px] border cursor-pointer transition-all shadow-subtle ${
                       isSelected
                         ? 'border-[#9B8963] bg-[#FFFFFF] dark:bg-[#21201D] ring-1 ring-[#9B8963]/30'
                         : 'border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FFFFFF]/70 dark:bg-[#21201D]/70 hover:bg-[#FFFFFF] dark:hover:bg-[#21201D]'
@@ -203,11 +203,11 @@ export const LibraryPage: React.FC = () => {
                       <StatusPill type="noteType" value={note.note_type} />
                     </div>
 
-                    <p className="text-xs text-[#858176] dark:text-[#8C877D] line-clamp-2 mt-1">
+                    <p className="text-xs text-[#858176] dark:text-[#8C877D] line-clamp-2 mt-0.5 leading-normal">
                       {note.content || 'Empty note...'}
                     </p>
 
-                    <div className="flex items-center justify-between text-[10px] text-[#858176] font-mono mt-2 pt-2 border-t border-[#E5E1D8]/40 dark:border-[#2E2C28]/40">
+                    <div className="flex items-center justify-between text-[10px] text-[#858176] font-mono mt-1.5 pt-1.5 border-t border-[#E5E1D8]/40 dark:border-[#2E2C28]/40">
                       <span>{formatDate(note.updated_at, 'MMM d, yyyy')}</span>
                       {note.tags.length > 0 && (
                         <span>#{note.tags[0]}{note.tags.length > 1 ? ` +${note.tags.length - 1}` : ''}</span>
@@ -392,9 +392,9 @@ const ActiveNoteEditor: React.FC<{
   );
 
   return (
-    <div className="rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] p-6 shadow-subtle space-y-6">
+    <div className="rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] p-4 sm:p-5 shadow-subtle space-y-3.5">
       {/* Top Metadata & Auto-save Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 text-xs">
         <div className="flex items-center gap-3">
           {/* Note Type selector */}
           <select
@@ -501,11 +501,11 @@ const ActiveNoteEditor: React.FC<{
       {/* Long-form Editorial Markdown Content Body */}
       <div>
         <textarea
-          rows={15}
+          rows={14}
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
           placeholder="Begin writing your thoughts, synthesis, or distilled principles in Markdown..."
-          className="w-full resize-y p-3 text-sm leading-relaxed bg-[#F5F3ED]/30 dark:bg-[#171614]/30 border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80 rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 font-sans focus:outline-none focus:border-[#9B8963]"
+          className="w-full resize-y p-3 text-sm leading-normal bg-[#F5F3ED]/30 dark:bg-[#171614]/30 border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80 rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 font-sans focus:outline-none focus:border-[#9B8963]"
         />
       </div>
 

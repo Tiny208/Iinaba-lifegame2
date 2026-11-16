@@ -58,12 +58,12 @@ export const FocusPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`flex flex-col flex-1 min-h-0 ${currentTab === 'calendar' ? 'space-y-2' : 'space-y-4 sm:space-y-5'}`}>
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E5E1D8] dark:border-[#2E2C28] flex-shrink-0">
         <div>
-          <div className="text-xs uppercase tracking-widest text-[#858176] font-mono">Action & Responsibility</div>
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-1">
+          <div className="text-[10px] uppercase tracking-widest text-[#858176] font-mono">Action & Responsibility</div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-0.5">
             Focus
           </h2>
         </div>
@@ -74,7 +74,7 @@ export const FocusPage: React.FC = () => {
             <button
               key={tab}
               onClick={() => setTab(tab)}
-              className={`px-3 py-1.5 rounded-[3px] transition-colors whitespace-nowrap capitalize ${
+              className={`px-3 py-1 rounded-[3px] transition-colors whitespace-nowrap capitalize ${
                 currentTab === tab
                   ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614]'
                   : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
@@ -87,11 +87,13 @@ export const FocusPage: React.FC = () => {
       </div>
 
       {/* Sub-view Content */}
-      {currentTab === 'today' && <TodayView />}
-      {currentTab === 'calendar' && <CalendarView />}
-      {currentTab === 'tasks' && <TasksView />}
-      {currentTab === 'projects' && <ProjectsView />}
-      {currentTab === 'areas' && <AreasView />}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {currentTab === 'today' && <TodayView />}
+        {currentTab === 'calendar' && <CalendarView />}
+        {currentTab === 'tasks' && <TasksView />}
+        {currentTab === 'projects' && <ProjectsView />}
+        {currentTab === 'areas' && <AreasView />}
+      </div>
     </div>
   );
 };
@@ -133,13 +135,13 @@ const TodayView: React.FC = () => {
   if (isLoading) return <CardSkeleton rows={4} />;
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-4 sm:space-y-5 max-w-3xl">
       {/* Top 3 Priorities */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">Today&rsquo;s Three Priorities</h3>
-            <p className="text-xs text-[#858176]">The needle-movers for your day.</p>
+            <p className="text-xs text-[#858176] mt-0.5">The needle-movers for your day.</p>
           </div>
           <span className="text-xs font-mono text-[#858176]">{todayPriorities.length} / 3 selected</span>
         </div>
@@ -150,7 +152,7 @@ const TodayView: React.FC = () => {
             description="Star up to 3 tasks to commit to today."
           />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {todayPriorities.map((task) => (
               <TaskRow
                 key={task.id}
@@ -164,7 +166,7 @@ const TodayView: React.FC = () => {
       </section>
 
       {/* Scheduled for Today */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">Scheduled For Today</h3>
 
         <form onSubmit={handleQuickAdd} className="flex gap-2">
@@ -186,9 +188,9 @@ const TodayView: React.FC = () => {
         )}
 
         {scheduledForToday.length === 0 ? (
-          <div className="text-xs text-[#858176] py-4 text-center">No other tasks scheduled for today.</div>
+          <div className="text-xs text-[#858176] py-3 text-center">No other tasks scheduled for today.</div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {scheduledForToday.map((task) => (
               <TaskRow
                 key={task.id}
@@ -328,9 +330,9 @@ const TasksView: React.FC = () => {
   const filteredTasks = priorityFilter === 'all' ? tasks : tasks.filter((t) => t.priority === priorityFilter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5 sm:space-y-4">
       {/* Action and Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           {/* Status filter */}
           <select
@@ -400,7 +402,7 @@ const TasksView: React.FC = () => {
           }
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {filteredTasks.map((task) => (
             <TaskRow
               key={task.id}
@@ -600,8 +602,8 @@ const TaskRow: React.FC<{
   const isCompleted = task.status === 'completed';
 
   return (
-    <div className="p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+    <div className="p-2.5 sm:p-3 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
           onClick={onToggleStatus}
           className="text-[#858176] hover:text-[#9B8963] transition-colors flex-shrink-0"
@@ -616,7 +618,7 @@ const TaskRow: React.FC<{
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span
-              className={`text-sm font-medium truncate ${
+              className={`text-sm font-medium truncate leading-snug ${
                 isCompleted ? 'line-through text-[#858176]' : 'text-[#242424] dark:text-[#EAE7DF]'
               }`}
             >
@@ -624,7 +626,7 @@ const TaskRow: React.FC<{
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-[#858176]">
+          <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[10px] text-[#858176] leading-tight">
             {task.project && (
               <span className="font-mono uppercase bg-[#F5F3ED] dark:bg-[#2A2824] px-1.5 py-0.5 rounded">
                 {task.project.name}
@@ -817,7 +819,7 @@ const ProjectsView: React.FC = () => {
               <div
                 key={proj.id}
                 onClick={() => setSelectedProject(proj)}
-                className="p-5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] hover:border-[#9B8963] transition-colors shadow-subtle cursor-pointer flex flex-col justify-between space-y-4"
+                className="p-3.5 sm:p-4 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] hover:border-[#9B8963] transition-colors shadow-subtle cursor-pointer flex flex-col justify-between space-y-2.5"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
@@ -828,19 +830,19 @@ const ProjectsView: React.FC = () => {
                   </div>
 
                   {proj.goal && (
-                    <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-1.5 line-clamp-2">
+                    <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5 line-clamp-2">
                       {proj.goal}
                     </p>
                   )}
 
                   {proj.area && (
-                    <div className="text-[10px] text-[#858176] tracking-wider uppercase font-mono mt-3">
+                    <div className="text-[10px] text-[#858176] tracking-wider uppercase font-mono mt-1.5">
                       Area: {proj.area.name}
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#858176] pt-3 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
+                <div className="flex items-center justify-between text-xs text-[#858176] pt-2 border-t border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
                   <div className="flex items-center gap-3 font-mono text-[11px]">
                     <span>{projectTasks.length} tasks</span>
                     <span>{projectNotes.length} notes</span>
@@ -1296,9 +1298,9 @@ const CalendarView: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Prevent outer page scrolling on desktop week view (Request 4)
+  // Prevent outer page scrolling on desktop calendar views (week, day, month)
   useEffect(() => {
-    if (viewMode === 'week') {
+    if (viewMode === 'week' || viewMode === 'day' || viewMode === 'month') {
       const lockOuterScroll = () => {
         if (window.innerWidth >= 768) {
           document.documentElement.style.overflow = 'hidden';
@@ -1332,7 +1334,7 @@ const CalendarView: React.FC = () => {
   // Auto-scroll time grid to 8 AM on mount / view switch
   useEffect(() => {
     if ((viewMode === 'week' || viewMode === 'day') && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 8 * 56 - 16;
+      scrollContainerRef.current.scrollTop = 8 * 48 - 12;
     }
   }, [viewMode, currentDate]);
 
@@ -1567,34 +1569,34 @@ const CalendarView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col min-h-0 h-full">
       {/* Calendar Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#242424] dark:text-[#EAE7DF]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 sm:mb-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h3 className="font-serif text-lg sm:text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">
             {getHeaderTitle()}
           </h3>
-          <div className="flex items-center gap-1 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] p-0.5">
+          <div className="flex items-center gap-0.5 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] p-0.5">
             <button onClick={handlePrev} className="p-1 text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => setCurrentDate(new Date())} className="px-2 py-0.5 text-xs text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
               Today
             </button>
             <button onClick={handleNext} className="p-1 text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* View Mode Toggle: Week, Day, List, Month (Month last as requested) */}
-          <div className="flex items-center bg-[#FFFFFF] dark:bg-[#21201D] p-1 rounded-[4px] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs">
+          <div className="flex items-center bg-[#FFFFFF] dark:bg-[#21201D] p-0.5 rounded-[4px] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs">
             {(['week', 'day', 'list', 'month'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setViewMode(m)}
-                className={`px-3 py-1 rounded capitalize transition-colors ${
+                className={`px-2.5 py-1 rounded capitalize transition-colors ${
                   viewMode === m
                     ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614] font-medium'
                     : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
@@ -1614,11 +1616,11 @@ const CalendarView: React.FC = () => {
 
       {/* Google Calendar Time Grid for Week and Day Views */}
       {(viewMode === 'week' || viewMode === 'day') && (
-        <div className="border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle">
+        <div className="flex-1 min-h-0 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
           {/* Day Names & Dates Header */}
-          <div className="flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FDFBF7] dark:bg-[#1E1D1A]">
-            <div className="w-14 sm:w-16 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-2 flex items-end justify-center">
-              <span className="text-[10px] font-mono text-[#858176]">GMT+7</span>
+          <div className="flex-shrink-0 flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FDFBF7] dark:bg-[#1E1D1A]">
+            <div className="w-12 sm:w-14 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-1.5 flex items-end justify-center">
+              <span className="text-[9.5px] font-mono text-[#858176]">GMT+7</span>
             </div>
             <div className={`flex-1 grid ${viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'}`}>
               {daysToDisplay.map((day) => {
@@ -1626,14 +1628,14 @@ const CalendarView: React.FC = () => {
                 return (
                   <div
                     key={day.toISOString()}
-                    className="p-2 text-center border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0"
+                    className="p-1.5 text-center border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0"
                   >
-                    <div className="text-[11px] font-mono uppercase text-[#858176]">
+                    <div className="text-[10px] font-mono uppercase text-[#858176]">
                       {format(day, 'EEE')}
                     </div>
                     <div className="mt-0.5 flex justify-center">
                       <span
-                        className={`inline-flex items-center justify-center w-7 h-7 text-xs font-mono rounded-full ${
+                        className={`inline-flex items-center justify-center w-6 h-6 text-xs font-mono rounded-full ${
                           isCurrentDay
                             ? 'bg-[#9B8963] text-white font-bold shadow-xs'
                             : 'text-[#242424] dark:text-[#EAE7DF] font-medium'
@@ -1649,9 +1651,9 @@ const CalendarView: React.FC = () => {
           </div>
 
           {/* All-day / Tasks Top Strip */}
-          <div className="flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FAF8F3] dark:bg-[#1C1B18] min-h-[38px]">
-            <div className="w-14 sm:w-16 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-1.5 flex items-center justify-center">
-              <span className="text-[10px] font-mono text-[#858176]">All-day</span>
+          <div className="flex-shrink-0 flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FAF8F3] dark:bg-[#1C1B18] min-h-[30px] max-h-[52px] overflow-y-auto">
+            <div className="w-12 sm:w-14 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-1 flex items-center justify-center">
+              <span className="text-[9.5px] font-mono text-[#858176]">All-day</span>
             </div>
             <div className={`flex-1 grid ${viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'}`}>
               {daysToDisplay.map((day) => {
@@ -1662,14 +1664,14 @@ const CalendarView: React.FC = () => {
                 return (
                   <div
                     key={day.toISOString()}
-                    className="p-1 border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0 space-y-1 min-h-[36px]"
+                    className="p-1 border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0 space-y-0.5 min-h-[28px]"
                   >
                     {allDayOrTaskItems.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleItemClick(item)}
-                        className={`w-full text-left text-[10px] px-1.5 py-0.5 rounded leading-tight truncate cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
+                        className={`w-full text-left text-[9.5px] px-1 py-0.5 rounded leading-tight truncate cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
                           item.type === 'event'
                             ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3]'
                             : item.type === 'task_deadline'
@@ -1690,17 +1692,17 @@ const CalendarView: React.FC = () => {
           {/* 24-Hour Scrollable Grid */}
           <div
             ref={scrollContainerRef}
-            className="h-[calc(100vh-270px)] md:h-[calc(100vh-250px)] max-h-[720px] min-h-[420px] overflow-y-auto overflow-x-auto relative"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-auto relative"
           >
-            <div className={`flex ${viewMode === 'week' ? 'min-w-[700px]' : 'min-w-full'}`}>
+            <div className={`flex ${viewMode === 'week' ? 'min-w-[640px]' : 'min-w-full'}`}>
               {/* Hour Labels Left Gutter */}
-              <div className="w-14 sm:w-16 flex-shrink-0 select-none border-r border-[#E5E1D8] dark:border-[#2E2C28]">
+              <div className="w-12 sm:w-14 flex-shrink-0 select-none border-r border-[#E5E1D8] dark:border-[#2E2C28]">
                 {HOURS.map((hour) => (
                   <div
                     key={hour}
-                    className="h-14 relative border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40"
+                    className="h-12 relative border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40"
                   >
-                    <span className="absolute -top-2.5 right-2 text-[10px] font-mono text-[#858176]">
+                    <span className="absolute -top-2 right-1.5 text-[9.5px] font-mono text-[#858176]">
                       {formatHourLabel(hour)}
                     </span>
                   </div>
@@ -1725,7 +1727,7 @@ const CalendarView: React.FC = () => {
                       {HOURS.map((hour) => (
                         <div
                           key={hour}
-                          className="h-14 border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40 hover:bg-[#F5F3ED]/30 dark:hover:bg-[#171614]/30 transition-colors"
+                          className="h-12 border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40 hover:bg-[#F5F3ED]/30 dark:hover:bg-[#171614]/30 transition-colors"
                         />
                       ))}
 
@@ -1734,10 +1736,10 @@ const CalendarView: React.FC = () => {
                         <div
                           className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
                           style={{
-                            top: `${((currentTime.getHours() * 60 + currentTime.getMinutes()) / 60) * 56}px`,
+                            top: `${((currentTime.getHours() * 60 + currentTime.getMinutes()) / 60) * 48}px`,
                           }}
                         >
-                          <span className="w-2.5 h-2.5 -ml-1 rounded-full bg-[#EA4335] shadow-xs flex-shrink-0" />
+                          <span className="w-2 h-2 -ml-1 rounded-full bg-[#EA4335] shadow-xs flex-shrink-0" />
                           <span className="h-[2px] w-full bg-[#EA4335]" />
                         </div>
                       )}
@@ -1769,8 +1771,8 @@ const CalendarView: React.FC = () => {
                         }
 
                         const durationMinutes = Math.max(endMinutes - startMinutes, 30);
-                        const topPx = (startMinutes / 60) * 56;
-                        const heightPx = Math.max((durationMinutes / 60) * 56 - 2, 28);
+                        const topPx = (startMinutes / 60) * 48;
+                        const heightPx = Math.max((durationMinutes / 60) * 48 - 2, 24);
 
                         return (
                           <button
@@ -1778,14 +1780,14 @@ const CalendarView: React.FC = () => {
                             type="button"
                             onClick={() => handleItemClick(item)}
                             style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                            className="absolute left-1 right-1 z-10 p-1.5 rounded-[4px] bg-[#9B8963]/20 dark:bg-[#9B8963]/30 border-l-[3px] border-[#9B8963] text-left overflow-hidden transition-all hover:ring-1 hover:ring-[#9B8963] hover:shadow-sm active:scale-[0.99] flex flex-col justify-start group"
+                            className="absolute left-1 right-1 z-10 p-1 rounded-[3px] bg-[#9B8963]/20 dark:bg-[#9B8963]/30 border-l-[3px] border-[#9B8963] text-left overflow-hidden transition-all hover:ring-1 hover:ring-[#9B8963] hover:shadow-sm active:scale-[0.99] flex flex-col justify-start group"
                             title={`${item.title} (${item.time || ''})`}
                           >
-                            <div className="font-medium text-xs text-[#242424] dark:text-[#EAE7DF] truncate leading-tight group-hover:text-[#9B8963] transition-colors">
+                            <div className="font-medium text-[11px] text-[#242424] dark:text-[#EAE7DF] truncate leading-tight group-hover:text-[#9B8963] transition-colors">
                               {item.title}
                             </div>
-                            {item.time && (
-                              <div className="text-[10px] font-mono text-[#857451] dark:text-[#D1C2A3] opacity-90 truncate leading-tight mt-0.5">
+                            {item.time && heightPx >= 34 && (
+                              <div className="text-[9px] font-mono text-[#857451] dark:text-[#D1C2A3] opacity-90 truncate leading-tight mt-0.5">
                                 {item.time}
                               </div>
                             )}
@@ -1801,11 +1803,11 @@ const CalendarView: React.FC = () => {
         </div>
       )}
 
-      {/* Month View (Title left, Start Time right) */}
+      {/* Month View (Title left, Start Time right - Fixed Compact Layout) */}
       {viewMode === 'month' && (
-        <div className="border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden">
+        <div className="flex-1 min-h-0 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
           {/* Day Names Header (Mon - Sun) */}
-          <div className="grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs font-mono text-[#858176] py-2">
+          <div className="flex-shrink-0 grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-[11px] font-mono text-[#858176] py-1.5 bg-[#FDFBF7] dark:bg-[#1E1D1A]">
             <span>Mon</span>
             <span>Tue</span>
             <span>Wed</span>
@@ -1816,7 +1818,7 @@ const CalendarView: React.FC = () => {
           </div>
 
           {/* Grid Days */}
-          <div className="grid grid-cols-7 auto-rows-fr">
+          <div className={`flex-1 min-h-0 grid grid-cols-7 ${monthDays.length > 35 ? 'grid-rows-6' : 'grid-rows-5'} divide-y divide-[#E5E1D8]/60 dark:divide-[#2E2C28]/60`}>
             {monthDays.map((day) => {
               const dayStr = format(day, 'yyyy-MM-dd');
               const isCurrMonth = isSameMonth(day, currentDate);
@@ -1826,13 +1828,13 @@ const CalendarView: React.FC = () => {
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[96px] p-1.5 border-b border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 flex flex-col ${
+                  className={`min-h-0 overflow-hidden p-1 sm:p-1.5 border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0 flex flex-col ${
                     !isCurrMonth ? 'bg-[#F5F3ED]/40 dark:bg-[#171614]/40 text-[#858176]/50' : ''
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-0.5 flex-shrink-0">
                     <span
-                      className={`text-[11px] font-mono px-1 rounded ${
+                      className={`text-[10px] font-mono px-1 rounded ${
                         isCurrentDay ? 'bg-[#9B8963] text-white font-bold' : 'text-[#858176]'
                       }`}
                     >
@@ -1840,13 +1842,13 @@ const CalendarView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="space-y-1 overflow-y-auto flex-1">
+                  <div className="space-y-0.5 overflow-y-auto flex-1 min-h-0 pr-0.5">
                     {itemsForDay.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleItemClick(item)}
-                        className={`w-full text-left text-[10px] p-1 rounded leading-tight flex items-center justify-between gap-1 cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
+                        className={`w-full text-left text-[9.5px] p-0.5 px-1 rounded leading-tight flex items-center justify-between gap-1 cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
                           item.type === 'event'
                             ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
                             : item.type === 'task_deadline'
@@ -1857,7 +1859,7 @@ const CalendarView: React.FC = () => {
                       >
                         <span className="truncate">{item.title}</span>
                         {item.type === 'event' && item.time && !item.allDay && (
-                          <span className="font-mono text-[9px] opacity-80 flex-shrink-0 font-medium ml-1">
+                          <span className="font-mono text-[8.5px] opacity-80 flex-shrink-0 font-medium ml-1">
                             {item.time}
                           </span>
                         )}

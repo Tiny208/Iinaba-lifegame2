@@ -48,7 +48,7 @@ export const AppLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F5F3ED] dark:bg-[#171614] text-[#242424] dark:text-[#EAE7DF] flex flex-col md:flex-row">
+    <div className="h-screen bg-[#F5F3ED] dark:bg-[#171614] text-[#242424] dark:text-[#EAE7DF] flex flex-col md:flex-row overflow-hidden">
       {/* Desktop Persistent Sidebar */}
       <Sidebar
         onOpenQuickCapture={() => setIsQuickCaptureOpen(true)}
@@ -62,9 +62,9 @@ export const AppLayout: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 pb-20 md:pb-8 flex flex-col">
+      <main className="flex-1 min-w-0 flex flex-col h-full min-h-0 overflow-y-auto">
         {!isConfigured && (
-          <div className="bg-[#9B8963]/10 border-b border-[#9B8963]/30 px-4 py-2.5 text-xs text-[#857451] dark:text-[#D1C2A3] flex items-center justify-between">
+          <div className="bg-[#9B8963]/10 border-b border-[#9B8963]/30 px-4 py-2 text-xs text-[#857451] dark:text-[#D1C2A3] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-[#9B8963] flex-shrink-0" />
               <span>
@@ -81,7 +81,7 @@ export const AppLayout: React.FC = () => {
         )}
 
         {!user && !loading && isConfigured && (
-          <div className="bg-[#9B8963]/15 border-b border-[#9B8963]/30 px-4 py-2.5 text-xs text-[#857451] dark:text-[#D1C2A3] flex items-center justify-between">
+          <div className="bg-[#9B8963]/15 border-b border-[#9B8963]/30 px-4 py-2 text-xs text-[#857451] dark:text-[#D1C2A3] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-[#9B8963] flex-shrink-0" />
               <span>
@@ -90,7 +90,7 @@ export const AppLayout: React.FC = () => {
             </div>
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1 font-medium px-2.5 py-1 rounded bg-[#9B8963] text-white hover:bg-[#857451] transition-colors ml-2 flex-shrink-0 shadow-xs"
+              className="inline-flex items-center gap-1 font-medium px-2.5 py-0.5 rounded bg-[#9B8963] text-white hover:bg-[#857451] transition-colors ml-2 flex-shrink-0 shadow-xs"
             >
               <LogIn className="w-3.5 h-3.5" />
               Đăng nhập ngay
@@ -98,7 +98,7 @@ export const AppLayout: React.FC = () => {
           </div>
         )}
 
-        <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full">
+        <div className="flex-1 p-3 sm:p-4 md:py-3 md:px-6 max-w-6xl mx-auto w-full flex flex-col min-h-0">
           <Outlet />
         </div>
       </main>

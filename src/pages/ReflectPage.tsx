@@ -32,12 +32,12 @@ export const ReflectPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5 sm:space-y-4">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#E5E1D8] dark:border-[#2E2C28]">
         <div>
-          <div className="text-xs uppercase tracking-widest text-[#858176] font-mono">Stoic Practice & Intention</div>
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-1">
+          <div className="text-[10px] uppercase tracking-widest text-[#858176] font-mono">Stoic Practice & Intention</div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] mt-0.5">
             Reflect
           </h2>
           <p className="text-xs text-[#858176] dark:text-[#8C877D] mt-0.5">
@@ -58,7 +58,7 @@ export const ReflectPage: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
-              className={`px-3 py-1.5 rounded-[3px] transition-colors whitespace-nowrap ${
+              className={`px-3 py-1 rounded-[3px] transition-colors whitespace-nowrap ${
                 currentTab === item.id
                   ? 'bg-[#242424] text-[#F5F3ED] dark:bg-[#EAE7DF] dark:text-[#171614]'
                   : 'text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]'
@@ -350,11 +350,11 @@ const PrinciplesView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4">
       <div className="flex items-center justify-between pb-2 border-b border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
         <div>
           <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">Guiding Principles</h3>
-          <p className="text-xs text-[#858176]">Rules and axioms you use to navigate life decisions.</p>
+          <p className="text-xs text-[#858176] mt-0.5">Rules and axioms you use to navigate life decisions.</p>
         </div>
 
         {!isAdding && (
@@ -413,11 +413,11 @@ const PrinciplesView: React.FC = () => {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {notes.map((principle) => (
             <div
               key={principle.id}
-              className="p-5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle space-y-2"
+              className="p-3.5 sm:p-4 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] shadow-subtle space-y-1"
             >
               <div className="flex items-start justify-between gap-3">
                 <h4 className="font-serif text-base font-semibold text-[#242424] dark:text-[#EAE7DF]">
@@ -431,7 +431,7 @@ const PrinciplesView: React.FC = () => {
                 </button>
               </div>
               {principle.content && (
-                <p className="text-xs text-[#858176] dark:text-[#8C877D] leading-relaxed">
+                <p className="text-xs text-[#858176] dark:text-[#8C877D] leading-normal mt-0.5">
                   {principle.content}
                 </p>
               )}
