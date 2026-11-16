@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
-import { useProjects } from '@/hooks/useProjects';
 import { useNotes } from '@/hooks/useNotes';
 import { useInbox } from '@/hooks/useInbox';
 import { useCalendar } from '@/hooks/useCalendar';
@@ -29,7 +28,6 @@ import { Task } from '@/types/database';
 export const HomePage: React.FC = () => {
   const { profile } = useAuth();
   const { tasks, isLoading: tasksLoading, toggleTaskStatus, createTask } = useTasks();
-  const { projects, isLoading: projectsLoading } = useProjects('active');
   const { notes, isLoading: notesLoading } = useNotes();
   const { unprocessedCount } = useInbox();
   const { unifiedItems } = useCalendar();
@@ -40,9 +38,9 @@ export const HomePage: React.FC = () => {
   const todayStr = format(new Date(), 'EEEE, MMMM d, yyyy');
   const greeting = getGreeting(profile?.full_name);
 
-  // A. Today Priorities: max 3 tasks with is_today_priority = true
+  // A. Today Priorities: max 3 tasks with is_today_priority = true, excluding completed
   const todayPriorities = tasks
-    .filter((t) => t.is_today_priority && !t.is_archived)
+    .filter((t) => t.is_today_priority && !t.is_archived && t.status !== 'completed')
     .slice(0, 3);
 
   // B. Overdue incomplete tasks
@@ -228,57 +226,6 @@ export const HomePage: React.FC = () => {
               </div>
             </section>
           )}
-
-          {/* Active Projects Section */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif text-xl font-medium text-[#242424] dark:text-[#EAE7DF]">
-                Active Projects
-              </h3>
-              <Link
-                to="/focus?tab=projects"
-                className="text-xs text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF] transition-colors"
-              >
-                View all projects →
-              </Link>
-            </div>
-
-            {projectsLoading ? (
-              <CardSkeleton rows={2} />
-            ) : projects.length === 0 ? (
-              <EmptyState
-                title="No active projects"
-                description="Anchor your tasks within structured goals."
-              />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {projects.slice(0, 4).map((p) => (
-                  <Link
-                    key={p.id}
-                    to={`/focus?tab=projects&projectId=${p.id}`}
-                    className="p-3.5 rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] hover:border-[#9B8963] transition-colors shadow-subtle block"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="font-medium text-sm text-[#242424] dark:text-[#EAE7DF] truncate">
-                        {p.name}
-                      </div>
-                      <Folder className="w-4 h-4 text-[#9B8963] flex-shrink-0 ml-2" />
-                    </div>
-                    {p.goal && (
-                      <p className="text-xs text-[#858176] dark:text-[#8C877D] line-clamp-1 mt-1">
-                        {p.goal}
-                      </p>
-                    )}
-                    {p.area && (
-                      <div className="mt-2 text-[10px] text-[#858176] tracking-wide uppercase font-mono">
-                        {p.area.name}
-                      </div>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
         </div>
 
         {/* Right Column (1 col): Upcoming & Recent Notes */}

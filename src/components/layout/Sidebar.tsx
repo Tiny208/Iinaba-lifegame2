@@ -47,9 +47,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenQuickCapture, onOpenSear
       {/* Brand Header */}
       <div className="p-6 pb-4 border-b border-[#E5E1D8]/60 dark:border-[#2E2C28]/60">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded bg-[#242424] dark:bg-[#EAE7DF] flex items-center justify-center text-[#F5F3ED] dark:text-[#171614] font-serif font-bold text-sm tracking-wider">
-            稲
-          </div>
+          <img
+            src="./inaba-logo.svg"
+            alt="INABA"
+            className="w-7 h-7 rounded-[6px] shadow-sm flex-shrink-0"
+          />
           <div>
             <h1 className="font-serif text-lg font-medium tracking-tight text-[#242424] dark:text-[#EAE7DF] leading-tight">
               INABA

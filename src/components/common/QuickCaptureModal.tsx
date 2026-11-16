@@ -108,6 +108,9 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({ isOpen, on
       setShowUrlField(false);
       setPendingFiles([]);
       setIsSubmitting(false);
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       onClose();
     } catch (err: any) {
       setIsSubmitting(false);
@@ -115,8 +118,15 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({ isOpen, on
     }
   };
 
+  const handleModalClose = () => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    onClose();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Quick Capture" subtitle="Empty your mind. Process later." maxWidth="lg">
+    <Modal isOpen={isOpen} onClose={handleModalClose} title="Quick Capture" subtitle="Empty your mind. Process later." maxWidth="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {submitError && (
           <div className="flex items-center gap-2 p-2.5 rounded bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 text-xs">
@@ -132,7 +142,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({ isOpen, on
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Capture an idea, quote, obligation, or link..."
-            className="w-full resize-none p-3 text-sm bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 dark:placeholder-[#8C877D]/60 focus:outline-none focus:border-[#9B8963] focus:ring-1 focus:ring-[#9B8963]"
+            className="w-full resize-none p-3 text-[16px] md:text-sm bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 dark:placeholder-[#8C877D]/60 focus:outline-none focus:border-[#9B8963] focus:ring-1 focus:ring-[#9B8963]"
           />
         </div>
 
@@ -145,7 +155,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({ isOpen, on
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://example.com/reference..."
-                className="w-full text-xs bg-transparent text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 focus:outline-none"
+                className="w-full text-[16px] md:text-xs bg-transparent text-[#242424] dark:text-[#EAE7DF] placeholder-[#858176]/60 focus:outline-none"
               />
             </div>
           </div>

@@ -53,9 +53,11 @@ export const AuthPage: React.FC = () => {
       <div className="w-full max-w-sm space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-10 h-10 rounded bg-[#242424] dark:bg-[#EAE7DF] flex items-center justify-center text-[#F5F3ED] dark:text-[#171614] font-serif font-bold text-lg mx-auto">
-            稲
-          </div>
+          <img
+            src="./inaba-logo.svg"
+            alt="INABA"
+            className="w-10 h-10 rounded-[8px] shadow-sm mx-auto"
+          />
           <h1 className="font-serif text-2xl font-medium tracking-tight">
             INABA // SECOND BRAIN
           </h1>

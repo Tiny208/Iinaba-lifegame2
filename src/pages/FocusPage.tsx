@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
@@ -29,6 +29,8 @@ import {
   subMonths,
   addWeeks,
   subWeeks,
+  addDays,
+  subDays,
 } from 'date-fns';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
@@ -101,8 +103,8 @@ const TodayView: React.FC = () => {
   const { tasks, isLoading, toggleTaskStatus, toggleTodayPriority, createTask } = useTasks();
   const [newTitle, setNewTitle] = useState('');
 
-  const todayPriorities = tasks.filter((t) => t.is_today_priority);
-  const scheduledForToday = tasks.filter((t) => t.scheduled_date === todayDateStr && !t.is_today_priority);
+  const todayPriorities = tasks.filter((t) => t.is_today_priority && !t.is_archived && t.status !== 'completed');
+  const scheduledForToday = tasks.filter((t) => t.scheduled_date === todayDateStr && !t.is_today_priority && !t.is_archived && t.status !== 'completed');
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1162,11 +1164,39 @@ const AreasView: React.FC = () => {
 };
 
 // ==============================================================================
-// 5. CALENDAR VIEW (Month, Week, List Views with Full Interactive Details & Edit)
+// 5. CALENDAR VIEW (Month, Week, Day, List Views with Full Interactive Details & Edit)
 // ==============================================================================
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const formatHourLabel = (hour: number) => {
+  if (hour === 0) return '12 AM';
+  if (hour < 12) return `${hour} AM`;
+  if (hour === 12) return '12 PM';
+  return `${hour - 12} PM`;
+};
+
 const CalendarView: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
+  const [viewMode, setViewMode] = useState<'week' | 'day' | 'list' | 'month'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return 'day';
+    }
+    return 'week';
+  });
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Update current time every minute for red indicator
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-scroll time grid to 8 AM on mount / view switch
+  useEffect(() => {
+    if ((viewMode === 'week' || viewMode === 'day') && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 8 * 56 - 16;
+    }
+  }, [viewMode, currentDate]);
 
   const { unifiedItems, isLoading, createEvent, updateEvent, deleteEvent } = useCalendar();
   const { updateTask, deleteTask } = useTasks();
@@ -1205,27 +1235,46 @@ const CalendarView: React.FC = () => {
   const [editTaskDueDate, setEditTaskDueDate] = useState('');
   const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
 
-  // Month intervals
+  // Month intervals (Monday-first)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const monthCalendarStart = startOfWeek(monthStart);
-  const monthCalendarEnd = endOfWeek(monthEnd);
+  const monthCalendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const monthCalendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const monthDays = eachDayOfInterval({ start: monthCalendarStart, end: monthCalendarEnd });
 
-  // Week intervals
-  const weekStart = startOfWeek(currentDate);
-  const weekEnd = endOfWeek(currentDate);
+  // Week intervals (Monday-first)
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const handlePrev = () => {
-    if (viewMode === 'month') setCurrentDate(subMonths(currentDate, 1));
+    if (viewMode === 'day') setCurrentDate(subDays(currentDate, 1));
     else if (viewMode === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else if (viewMode === 'month') setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(subMonths(currentDate, 1));
   };
 
   const handleNext = () => {
-    if (viewMode === 'month') setCurrentDate(addMonths(currentDate, 1));
+    if (viewMode === 'day') setCurrentDate(addDays(currentDate, 1));
     else if (viewMode === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else if (viewMode === 'month') setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(addMonths(currentDate, 1));
   };
+
+  const getHeaderTitle = () => {
+    if (viewMode === 'day') {
+      return format(currentDate, 'EEEE, d MMMM yyyy');
+    }
+    if (viewMode === 'week') {
+      if (isSameMonth(weekStart, weekEnd)) {
+        return `${format(weekStart, 'd')} – ${format(weekEnd, 'd MMMM yyyy')}`;
+      }
+      return `${format(weekStart, 'd MMM')} – ${format(weekEnd, 'd MMM yyyy')}`;
+    }
+    return format(currentDate, 'MMMM yyyy');
+  };
+
+  const daysToDisplay = viewMode === 'day' ? [currentDate] : weekDays;
 
   // Open item modal depending on whether it's an independent event or a task
   const handleItemClick = (item: CalendarItem) => {
@@ -1345,8 +1394,8 @@ const CalendarView: React.FC = () => {
       {/* Calendar Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="font-serif text-2xl font-medium text-[#242424] dark:text-[#EAE7DF]">
-            {format(currentDate, 'MMMM yyyy')}
+          <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#242424] dark:text-[#EAE7DF]">
+            {getHeaderTitle()}
           </h3>
           <div className="flex items-center gap-1 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] p-0.5">
             <button onClick={handlePrev} className="p-1 text-[#858176] hover:text-[#242424] dark:hover:text-[#EAE7DF]">
@@ -1362,9 +1411,9 @@ const CalendarView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle: Week, Day, List, Month (Month last as requested) */}
           <div className="flex items-center bg-[#FFFFFF] dark:bg-[#21201D] p-1 rounded-[4px] border border-[#E5E1D8] dark:border-[#2E2C28] text-xs">
-            {(['month', 'week', 'list'] as const).map((m) => (
+            {(['week', 'day', 'list', 'month'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setViewMode(m)}
@@ -1386,18 +1435,207 @@ const CalendarView: React.FC = () => {
         </div>
       </div>
 
-      {/* Month View */}
+      {/* Google Calendar Time Grid for Week and Day Views */}
+      {(viewMode === 'week' || viewMode === 'day') && (
+        <div className="border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle">
+          {/* Day Names & Dates Header */}
+          <div className="flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FDFBF7] dark:bg-[#1E1D1A]">
+            <div className="w-14 sm:w-16 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-2 flex items-end justify-center">
+              <span className="text-[10px] font-mono text-[#858176]">GMT+7</span>
+            </div>
+            <div className={`flex-1 grid ${viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'}`}>
+              {daysToDisplay.map((day) => {
+                const isCurrentDay = isSameDay(day, new Date());
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className="p-2 text-center border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0"
+                  >
+                    <div className="text-[11px] font-mono uppercase text-[#858176]">
+                      {format(day, 'EEE')}
+                    </div>
+                    <div className="mt-0.5 flex justify-center">
+                      <span
+                        className={`inline-flex items-center justify-center w-7 h-7 text-xs font-mono rounded-full ${
+                          isCurrentDay
+                            ? 'bg-[#9B8963] text-white font-bold shadow-xs'
+                            : 'text-[#242424] dark:text-[#EAE7DF] font-medium'
+                        }`}
+                      >
+                        {format(day, 'd')}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* All-day / Tasks Top Strip */}
+          <div className="flex border-b border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FAF8F3] dark:bg-[#1C1B18] min-h-[38px]">
+            <div className="w-14 sm:w-16 flex-shrink-0 border-r border-[#E5E1D8] dark:border-[#2E2C28] p-1.5 flex items-center justify-center">
+              <span className="text-[10px] font-mono text-[#858176]">All-day</span>
+            </div>
+            <div className={`flex-1 grid ${viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'}`}>
+              {daysToDisplay.map((day) => {
+                const dayStr = format(day, 'yyyy-MM-dd');
+                const allDayOrTaskItems = unifiedItems.filter(
+                  (i) => i.date === dayStr && (i.type !== 'event' || i.allDay || !i.time)
+                );
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className="p-1 border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0 space-y-1 min-h-[36px]"
+                  >
+                    {allDayOrTaskItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleItemClick(item)}
+                        className={`w-full text-left text-[10px] px-1.5 py-0.5 rounded leading-tight truncate cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
+                          item.type === 'event'
+                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3]'
+                            : item.type === 'task_deadline'
+                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400'
+                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7]'
+                        }`}
+                        title={`${item.title} (Click to view/edit)`}
+                      >
+                        {item.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 24-Hour Scrollable Grid */}
+          <div
+            ref={scrollContainerRef}
+            className="max-h-[640px] overflow-y-auto overflow-x-auto relative"
+          >
+            <div className={`flex ${viewMode === 'week' ? 'min-w-[700px]' : 'min-w-full'}`}>
+              {/* Hour Labels Left Gutter */}
+              <div className="w-14 sm:w-16 flex-shrink-0 select-none border-r border-[#E5E1D8] dark:border-[#2E2C28]">
+                {HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="h-14 relative border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40"
+                  >
+                    <span className="absolute -top-2.5 right-2 text-[10px] font-mono text-[#858176]">
+                      {formatHourLabel(hour)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Day Columns in Grid */}
+              <div className={`flex-1 grid ${viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'} relative`}>
+                {daysToDisplay.map((day) => {
+                  const dayStr = format(day, 'yyyy-MM-dd');
+                  const isCurrentDay = isSameDay(day, new Date());
+                  const timedEvents = unifiedItems.filter(
+                    (i) => i.date === dayStr && i.type === 'event' && !i.allDay && i.time
+                  );
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className="relative border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0"
+                    >
+                      {/* 24 background hour rows */}
+                      {HOURS.map((hour) => (
+                        <div
+                          key={hour}
+                          className="h-14 border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40 hover:bg-[#F5F3ED]/30 dark:hover:bg-[#171614]/30 transition-colors"
+                        />
+                      ))}
+
+                      {/* Red Indicator Line for Current Time */}
+                      {isCurrentDay && (
+                        <div
+                          className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                          style={{
+                            top: `${((currentTime.getHours() * 60 + currentTime.getMinutes()) / 60) * 56}px`,
+                          }}
+                        >
+                          <span className="w-2.5 h-2.5 -ml-1 rounded-full bg-[#EA4335] shadow-xs flex-shrink-0" />
+                          <span className="h-[2px] w-full bg-[#EA4335]" />
+                        </div>
+                      )}
+
+                      {/* Timed Event Blocks */}
+                      {timedEvents.map((item) => {
+                        let startMinutes = 9 * 60;
+                        let endMinutes = 10 * 60;
+
+                        if (item.rawEvent?.start_time && item.rawEvent.start_time.includes('T')) {
+                          const parts = item.rawEvent.start_time.split('T')[1].substring(0, 5).split(':');
+                          const sh = parseInt(parts[0], 10);
+                          const sm = parseInt(parts[1], 10);
+                          if (!isNaN(sh) && !isNaN(sm)) startMinutes = sh * 60 + sm;
+                        } else if (item.time) {
+                          const parts = item.time.split(':');
+                          const sh = parseInt(parts[0], 10);
+                          const sm = parseInt(parts[1], 10);
+                          if (!isNaN(sh) && !isNaN(sm)) startMinutes = sh * 60 + sm;
+                        }
+
+                        if (item.rawEvent?.end_time && item.rawEvent.end_time.includes('T')) {
+                          const parts = item.rawEvent.end_time.split('T')[1].substring(0, 5).split(':');
+                          const eh = parseInt(parts[0], 10);
+                          const em = parseInt(parts[1], 10);
+                          if (!isNaN(eh) && !isNaN(em)) endMinutes = eh * 60 + em;
+                        } else {
+                          endMinutes = startMinutes + 60;
+                        }
+
+                        const durationMinutes = Math.max(endMinutes - startMinutes, 30);
+                        const topPx = (startMinutes / 60) * 56;
+                        const heightPx = Math.max((durationMinutes / 60) * 56 - 2, 28);
+
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleItemClick(item)}
+                            style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+                            className="absolute left-1 right-1 z-10 p-1.5 rounded-[4px] bg-[#9B8963]/20 dark:bg-[#9B8963]/30 border-l-[3px] border-[#9B8963] text-left overflow-hidden transition-all hover:ring-1 hover:ring-[#9B8963] hover:shadow-sm active:scale-[0.99] flex flex-col justify-start group"
+                            title={`${item.title} (${item.time || ''})`}
+                          >
+                            <div className="font-medium text-xs text-[#242424] dark:text-[#EAE7DF] truncate leading-tight group-hover:text-[#9B8963] transition-colors">
+                              {item.title}
+                            </div>
+                            {item.time && (
+                              <div className="text-[10px] font-mono text-[#857451] dark:text-[#D1C2A3] opacity-90 truncate leading-tight mt-0.5">
+                                {item.time}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Month View (Title left, Start Time right) */}
       {viewMode === 'month' && (
         <div className="border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden">
-          {/* Day Names Header */}
+          {/* Day Names Header (Mon - Sun) */}
           <div className="grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-xs font-mono text-[#858176] py-2">
-            <span>Sun</span>
             <span>Mon</span>
             <span>Tue</span>
             <span>Wed</span>
             <span>Thu</span>
             <span>Fri</span>
             <span>Sat</span>
+            <span>Sun</span>
           </div>
 
           {/* Grid Days */}
@@ -1431,7 +1669,7 @@ const CalendarView: React.FC = () => {
                         key={item.id}
                         type="button"
                         onClick={() => handleItemClick(item)}
-                        className={`w-full text-left text-[10px] p-1 rounded leading-tight truncate cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
+                        className={`w-full text-left text-[10px] p-1 rounded leading-tight flex items-center justify-between gap-1 cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
                           item.type === 'event'
                             ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
                             : item.type === 'task_deadline'
@@ -1440,7 +1678,12 @@ const CalendarView: React.FC = () => {
                         }`}
                         title={`${item.title} (Click to view/edit)`}
                       >
-                        {item.title}
+                        <span className="truncate">{item.title}</span>
+                        {item.type === 'event' && item.time && !item.allDay && (
+                          <span className="font-mono text-[9px] opacity-80 flex-shrink-0 font-medium ml-1">
+                            {item.time}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -1448,60 +1691,6 @@ const CalendarView: React.FC = () => {
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* Week View */}
-      {viewMode === 'week' && (
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-          {weekDays.map((day) => {
-            const dayStr = format(day, 'yyyy-MM-dd');
-            const isCurrentDay = isSameDay(day, new Date());
-            const itemsForDay = unifiedItems.filter((i) => i.date === dayStr);
-
-            return (
-              <div
-                key={day.toISOString()}
-                className={`p-3 rounded-[4px] border ${
-                  isCurrentDay
-                    ? 'border-[#9B8963] bg-[#FFFFFF] dark:bg-[#21201D]'
-                    : 'border-[#E5E1D8] dark:border-[#2E2C28] bg-[#FFFFFF]/70 dark:bg-[#21201D]/70'
-                } shadow-subtle min-h-[160px] flex flex-col`}
-              >
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 font-mono text-xs">
-                  <span className="font-semibold text-[#242424] dark:text-[#EAE7DF]">{format(day, 'EEE')}</span>
-                  <span className={isCurrentDay ? 'text-[#9B8963] font-bold' : 'text-[#858176]'}>{format(day, 'MMM d')}</span>
-                </div>
-
-                <div className="space-y-1.5 flex-1">
-                  {itemsForDay.length === 0 ? (
-                    <span className="text-[11px] text-[#858176]/60 italic">Free day</span>
-                  ) : (
-                    itemsForDay.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleItemClick(item)}
-                        className={`w-full text-left text-xs p-1.5 rounded cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
-                          item.type === 'event'
-                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
-                            : item.type === 'task_deadline'
-                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 hover:ring-1 hover:ring-red-400/50'
-                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7] hover:ring-1 hover:ring-[#7B8D7A]/50'
-                        }`}
-                        title="Click to view/edit"
-                      >
-                        <div className="font-medium truncate">{item.title}</div>
-                        {item.type === 'event' && item.time && !item.allDay && (
-                          <div className="text-[10px] opacity-75 font-mono">{item.time}</div>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 

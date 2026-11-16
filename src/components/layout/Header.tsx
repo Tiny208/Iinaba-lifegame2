@@ -14,9 +14,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuickCapture, onOpenSearch
   return (
     <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#FFFFFF] dark:bg-[#21201D] border-b border-[#E5E1D8] dark:border-[#2E2C28] sticky top-0 z-30">
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded bg-[#242424] dark:bg-[#EAE7DF] flex items-center justify-center text-[#F5F3ED] dark:text-[#171614] font-serif font-bold text-xs">
-          稲
-        </div>
+        <img
+          src="./inaba-logo.svg"
+          alt="INABA"
+          className="w-6 h-6 rounded-[5px] shadow-sm flex-shrink-0"
+        />
         <div>
           <span className="font-serif font-medium text-sm text-[#242424] dark:text-[#EAE7DF]">INABA</span>
           <span className="text-[10px] text-[#858176] ml-2">{todayFormatted}</span>

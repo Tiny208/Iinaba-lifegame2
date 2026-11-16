@@ -64,6 +64,7 @@ export function useCalendar(startDate?: string, endDate?: string) {
         .select('*, project:projects(*), area:areas(*)')
         .eq('user_id', user.id)
         .eq('is_archived', false)
+        .neq('status', 'completed')
         .or('scheduled_date.not.is.null,due_date.not.is.null');
 
       if (error) throw error;
@@ -264,6 +265,8 @@ export function useCalendar(startDate?: string, endDate?: string) {
   });
 
   (tasksCalendarQuery.data || []).forEach((task) => {
+    if (task.status === 'completed' || task.is_archived) return;
+
     if (task.scheduled_date) {
       unifiedItems.push({
         id: `task-sched-${task.id}`,
