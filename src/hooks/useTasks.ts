@@ -136,6 +136,8 @@ export function useTasks(filters?: {
       status?: TaskStatus;
       priority?: TaskPriority;
       recurrence?: TaskRecurrence | null;
+      recurrence_start_date?: string | null;
+      recurrence_end_date?: string | null;
       due_date?: string | null;
       scheduled_date?: string | null;
       project_id?: string | null;
@@ -143,23 +145,39 @@ export function useTasks(filters?: {
       is_today_priority?: boolean;
     }) => {
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase
+      const payload: any = {
+        user_id: user.id,
+        title: newTask.title.trim(),
+        description: newTask.description?.trim() || null,
+        status: newTask.status || 'todo',
+        priority: newTask.priority || 'medium',
+        recurrence: newTask.recurrence || null,
+        recurrence_start_date: newTask.recurrence ? (newTask.recurrence_start_date || null) : null,
+        recurrence_end_date: newTask.recurrence ? (newTask.recurrence_end_date || null) : null,
+        due_date: newTask.due_date || null,
+        scheduled_date: newTask.scheduled_date || null,
+        project_id: newTask.project_id || null,
+        area_id: newTask.area_id || null,
+        is_today_priority: newTask.is_today_priority || false,
+      };
+
+      let { data, error } = await supabase
         .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: newTask.title.trim(),
-          description: newTask.description?.trim() || null,
-          status: newTask.status || 'todo',
-          priority: newTask.priority || 'medium',
-          recurrence: newTask.recurrence || null,
-          due_date: newTask.due_date || null,
-          scheduled_date: newTask.scheduled_date || null,
-          project_id: newTask.project_id || null,
-          area_id: newTask.area_id || null,
-          is_today_priority: newTask.is_today_priority || false,
-        })
+        .insert(payload)
         .select('*, project:projects(*), area:areas(*)')
         .single();
+
+      if (error && (error.message?.includes('recurrence_start_date') || error.message?.includes('recurrence_end_date'))) {
+        delete payload.recurrence_start_date;
+        delete payload.recurrence_end_date;
+        const retry = await supabase
+          .from('tasks')
+          .insert(payload)
+          .select('*, project:projects(*), area:areas(*)')
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return data as Task;
@@ -181,13 +199,27 @@ export function useTasks(filters?: {
         payload.completed_at = null;
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('tasks')
         .update(payload)
         .eq('id', id)
         .eq('user_id', user.id)
         .select('*, project:projects(*), area:areas(*)')
         .single();
+
+      if (error && (error.message?.includes('recurrence_start_date') || error.message?.includes('recurrence_end_date'))) {
+        delete payload.recurrence_start_date;
+        delete payload.recurrence_end_date;
+        const retry = await supabase
+          .from('tasks')
+          .update(payload)
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .select('*, project:projects(*), area:areas(*)')
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       const updatedTask = data as Task;
@@ -210,9 +242,12 @@ export function useTasks(filters?: {
 
         const nextDueDate = calculateNextDueDate(updatedTask.recurrence, updatedTask.due_date);
 
-        await supabase
-          .from('tasks')
-          .insert({
+        // Check if next date exceeds recurrence_end_date
+        const targetNextDate = nextDueDate || nextScheduledDate;
+        const isPastEnd = updatedTask.recurrence_end_date && targetNextDate && targetNextDate > updatedTask.recurrence_end_date;
+
+        if (!isPastEnd) {
+          const nextTaskPayload: any = {
             user_id: user.id,
             title: updatedTask.title,
             description: updatedTask.description,
@@ -221,11 +256,21 @@ export function useTasks(filters?: {
             project_id: updatedTask.project_id,
             area_id: updatedTask.area_id,
             recurrence: updatedTask.recurrence,
+            recurrence_start_date: updatedTask.recurrence_start_date || null,
+            recurrence_end_date: updatedTask.recurrence_end_date || null,
             scheduled_date: nextScheduledDate,
             due_date: nextDueDate,
             is_today_priority: false,
             is_archived: false,
-          });
+          };
+
+          const insertRes = await supabase.from('tasks').insert(nextTaskPayload);
+          if (insertRes.error && (insertRes.error.message?.includes('recurrence_start_date') || insertRes.error.message?.includes('recurrence_end_date'))) {
+            delete nextTaskPayload.recurrence_start_date;
+            delete nextTaskPayload.recurrence_end_date;
+            await supabase.from('tasks').insert(nextTaskPayload);
+          }
+        }
       }
 
       return updatedTask;
@@ -276,9 +321,12 @@ export function useTasks(filters?: {
 
         const nextDueDate = calculateNextDueDate(updatedTask.recurrence, updatedTask.due_date);
 
-        await supabase
-          .from('tasks')
-          .insert({
+        // Check if next date exceeds recurrence_end_date
+        const targetNextDate = nextDueDate || nextScheduledDate;
+        const isPastEnd = updatedTask.recurrence_end_date && targetNextDate && targetNextDate > updatedTask.recurrence_end_date;
+
+        if (!isPastEnd) {
+          const nextTaskPayload: any = {
             user_id: user.id,
             title: updatedTask.title,
             description: updatedTask.description,
@@ -287,11 +335,21 @@ export function useTasks(filters?: {
             project_id: updatedTask.project_id,
             area_id: updatedTask.area_id,
             recurrence: updatedTask.recurrence,
+            recurrence_start_date: updatedTask.recurrence_start_date || null,
+            recurrence_end_date: updatedTask.recurrence_end_date || null,
             scheduled_date: nextScheduledDate,
             due_date: nextDueDate,
             is_today_priority: false,
             is_archived: false,
-          });
+          };
+
+          const insertRes = await supabase.from('tasks').insert(nextTaskPayload);
+          if (insertRes.error && (insertRes.error.message?.includes('recurrence_start_date') || insertRes.error.message?.includes('recurrence_end_date'))) {
+            delete nextTaskPayload.recurrence_start_date;
+            delete nextTaskPayload.recurrence_end_date;
+            await supabase.from('tasks').insert(nextTaskPayload);
+          }
+        }
       }
 
       return updatedTask;

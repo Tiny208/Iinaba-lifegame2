@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   Calendar as CalendarIcon,
+  Check,
   CheckCircle2,
   Circle,
   Plus,
@@ -237,6 +238,8 @@ const TasksView: React.FC = () => {
   const [formPriority, setFormPriority] = useState<TaskPriority>('medium');
   const [formStatus, setFormStatus] = useState<TaskStatus>('todo');
   const [formRecurrence, setFormRecurrence] = useState<TaskRecurrence | ''>('');
+  const [formRecurrenceStartDate, setFormRecurrenceStartDate] = useState('');
+  const [formRecurrenceEndDate, setFormRecurrenceEndDate] = useState('');
   const [formDueDate, setFormDueDate] = useState('');
   const [formScheduledDate, setFormScheduledDate] = useState('');
   const [formProjectId, setFormProjectId] = useState('');
@@ -251,6 +254,8 @@ const TasksView: React.FC = () => {
     setFormPriority('medium');
     setFormStatus('todo');
     setFormRecurrence('');
+    setFormRecurrenceStartDate(format(new Date(), 'yyyy-MM-dd'));
+    setFormRecurrenceEndDate('');
     setFormDueDate('');
     setFormScheduledDate('');
     setFormProjectId(projectFilter !== 'all' ? projectFilter : '');
@@ -267,6 +272,8 @@ const TasksView: React.FC = () => {
     setFormPriority(task.priority);
     setFormStatus(task.status);
     setFormRecurrence(task.recurrence || '');
+    setFormRecurrenceStartDate(task.recurrence_start_date || '');
+    setFormRecurrenceEndDate(task.recurrence_end_date || '');
     setFormDueDate(task.due_date ? task.due_date.split('T')[0] : '');
     setFormScheduledDate(task.scheduled_date || '');
     setFormProjectId(task.project_id || '');
@@ -296,6 +303,8 @@ const TasksView: React.FC = () => {
           priority: formPriority,
           status: formStatus,
           recurrence: formRecurrence || null,
+          recurrence_start_date: formRecurrence ? (formRecurrenceStartDate || null) : null,
+          recurrence_end_date: formRecurrence ? (formRecurrenceEndDate || null) : null,
           due_date: formDueDate || null,
           scheduled_date: formScheduledDate || null,
           project_id: formProjectId || null,
@@ -309,6 +318,8 @@ const TasksView: React.FC = () => {
           priority: formPriority,
           status: formStatus,
           recurrence: formRecurrence || null,
+          recurrence_start_date: formRecurrence ? (formRecurrenceStartDate || null) : null,
+          recurrence_end_date: formRecurrence ? (formRecurrenceEndDate || null) : null,
           due_date: formDueDate || null,
           scheduled_date: formScheduledDate || null,
           project_id: formProjectId || null,
@@ -497,6 +508,30 @@ const TasksView: React.FC = () => {
               </select>
             </div>
           </div>
+
+          {formRecurrence && (
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-[4px] bg-[#FAF8F3] dark:bg-[#1E1D1A] border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80">
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Lặp lại bắt đầu từ</label>
+                <input
+                  type="date"
+                  value={formRecurrenceStartDate}
+                  onChange={(e) => setFormRecurrenceStartDate(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Đến ngày (tuỳ chọn)</label>
+                <input
+                  type="date"
+                  value={formRecurrenceEndDate}
+                  onChange={(e) => setFormRecurrenceEndDate(e.target.value)}
+                  placeholder="Không giới hạn"
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1337,7 +1372,7 @@ const CalendarView: React.FC = () => {
   }, [viewMode, currentDate]);
 
   const { unifiedItems, isLoading, createEvent, updateEvent, deleteEvent } = useCalendar();
-  const { updateTask, deleteTask } = useTasks();
+  const { updateTask, deleteTask, toggleTaskStatus } = useTasks();
 
   // Create Event state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -1349,6 +1384,8 @@ const CalendarView: React.FC = () => {
   const [isAllDay, setIsAllDay] = useState(false);
   const [eventLocation, setEventLocation] = useState('');
   const [eventRecurrence, setEventRecurrence] = useState<EventRecurrence | ''>('');
+  const [eventRecurrenceStartDate, setEventRecurrenceStartDate] = useState('');
+  const [eventRecurrenceEndDate, setEventRecurrenceEndDate] = useState('');
   const [eventError, setEventError] = useState<string | null>(null);
   const [isEventSaving, setIsEventSaving] = useState(false);
 
@@ -1362,6 +1399,8 @@ const CalendarView: React.FC = () => {
   const [editIsAllDay, setEditIsAllDay] = useState(false);
   const [editEventLocation, setEditEventLocation] = useState('');
   const [editEventRecurrence, setEditEventRecurrence] = useState<EventRecurrence | ''>('');
+  const [editEventRecurrenceStartDate, setEditEventRecurrenceStartDate] = useState('');
+  const [editEventRecurrenceEndDate, setEditEventRecurrenceEndDate] = useState('');
   const [isDeleteEventConfirmOpen, setIsDeleteEventConfirmOpen] = useState(false);
 
   // Selected Task (View / Edit from Calendar) state
@@ -1371,6 +1410,8 @@ const CalendarView: React.FC = () => {
   const [editTaskStatus, setEditTaskStatus] = useState<TaskStatus>('todo');
   const [editTaskPriority, setEditTaskPriority] = useState<TaskPriority>('medium');
   const [editTaskRecurrence, setEditTaskRecurrence] = useState<TaskRecurrence | ''>('');
+  const [editTaskRecurrenceStartDate, setEditTaskRecurrenceStartDate] = useState('');
+  const [editTaskRecurrenceEndDate, setEditTaskRecurrenceEndDate] = useState('');
   const [editTaskScheduledDate, setEditTaskScheduledDate] = useState('');
   const [editTaskDueDate, setEditTaskDueDate] = useState('');
   const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
@@ -1416,6 +1457,25 @@ const CalendarView: React.FC = () => {
 
   const daysToDisplay = viewMode === 'day' ? [currentDate] : weekDays;
 
+  // Handle clicking a time slot in Week / Day view to create event directly
+  const handleTimeSlotClick = (day: Date, hour: number) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const startH = hour.toString().padStart(2, '0');
+    const endH = ((hour + 1) % 24).toString().padStart(2, '0');
+    setEventDate(dayStr);
+    setEventStartTime(`${startH}:00`);
+    setEventEndTime(`${endH}:00`);
+    setIsAllDay(false);
+    setEventTitle('');
+    setEventDesc('');
+    setEventLocation('');
+    setEventRecurrence('');
+    setEventRecurrenceStartDate(dayStr);
+    setEventRecurrenceEndDate('');
+    setEventError(null);
+    setIsEventModalOpen(true);
+  };
+
   // Open item modal depending on whether it's an independent event or a task
   const handleItemClick = (item: CalendarItem) => {
     if (item.type === 'event' && item.rawEvent) {
@@ -1433,6 +1493,8 @@ const CalendarView: React.FC = () => {
       setEditIsAllDay(ev.is_all_day);
       setEditEventLocation(ev.location || '');
       setEditEventRecurrence(ev.recurrence || '');
+      setEditEventRecurrenceStartDate(ev.recurrence_start_date || datePart);
+      setEditEventRecurrenceEndDate(ev.recurrence_end_date || '');
     } else if (item.rawTask) {
       const t = item.rawTask;
       setSelectedTask(t);
@@ -1441,8 +1503,10 @@ const CalendarView: React.FC = () => {
       setEditTaskStatus(t.status);
       setEditTaskPriority(t.priority);
       setEditTaskRecurrence(t.recurrence || '');
+      setEditTaskRecurrenceStartDate(t.recurrence_start_date || (t.scheduled_date || ''));
+      setEditTaskRecurrenceEndDate(t.recurrence_end_date || '');
       setEditTaskScheduledDate(t.scheduled_date || '');
-      setEditTaskDueDate(t.due_date || '');
+      setEditTaskDueDate(t.due_date ? t.due_date.split('T')[0] : '');
     }
   };
 
@@ -1476,12 +1540,16 @@ const CalendarView: React.FC = () => {
         is_all_day: isAllDay,
         location: eventLocation.trim() || undefined,
         recurrence: eventRecurrence ? (eventRecurrence as EventRecurrence) : null,
+        recurrence_start_date: eventRecurrence ? (eventRecurrenceStartDate || null) : null,
+        recurrence_end_date: eventRecurrence ? (eventRecurrenceEndDate || null) : null,
       });
 
       setEventTitle('');
       setEventDesc('');
       setEventLocation('');
       setEventRecurrence('');
+      setEventRecurrenceStartDate('');
+      setEventRecurrenceEndDate('');
       setIsAllDay(false);
       setIsEventModalOpen(false);
     } catch (err: any) {
@@ -1523,6 +1591,8 @@ const CalendarView: React.FC = () => {
         is_all_day: editIsAllDay,
         location: editEventLocation.trim() || undefined,
         recurrence: editEventRecurrence ? (editEventRecurrence as EventRecurrence) : null,
+        recurrence_start_date: editEventRecurrence ? (editEventRecurrenceStartDate || null) : null,
+        recurrence_end_date: editEventRecurrence ? (editEventRecurrenceEndDate || null) : null,
       });
 
       setSelectedEvent(null);
@@ -1552,6 +1622,8 @@ const CalendarView: React.FC = () => {
       status: editTaskStatus,
       priority: editTaskPriority,
       recurrence: editTaskRecurrence || null,
+      recurrence_start_date: editTaskRecurrence ? (editTaskRecurrenceStartDate || null) : null,
+      recurrence_end_date: editTaskRecurrence ? (editTaskRecurrenceEndDate || null) : null,
       scheduled_date: editTaskScheduledDate || null,
       due_date: editTaskDueDate || null,
     });
@@ -1721,12 +1793,18 @@ const CalendarView: React.FC = () => {
                       key={day.toISOString()}
                       className="relative border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0"
                     >
-                      {/* 24 background hour rows */}
+                      {/* 24 background hour rows with click-to-create */}
                       {HOURS.map((hour) => (
                         <div
                           key={hour}
-                          className="h-12 border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40 hover:bg-[#F5F3ED]/30 dark:hover:bg-[#171614]/30 transition-colors"
-                        />
+                          onClick={() => handleTimeSlotClick(day, hour)}
+                          className="h-12 border-b border-[#E5E1D8]/40 dark:border-[#2E2C28]/40 hover:bg-[#9B8963]/10 dark:hover:bg-[#9B8963]/15 transition-colors cursor-pointer group relative"
+                          title={`Nhấn để tạo sự kiện lúc ${formatHourLabel(hour)}`}
+                        >
+                          <span className="opacity-0 group-hover:opacity-70 text-[9px] font-mono text-[#9B8963] dark:text-[#D1C2A3] absolute top-1 left-1.5 select-none pointer-events-none transition-opacity">
+                            + Thêm sự kiện
+                          </span>
+                        </div>
                       ))}
 
                       {/* Red Indicator Line for Current Time */}
@@ -1801,75 +1879,99 @@ const CalendarView: React.FC = () => {
         </div>
       )}
 
-      {/* Month View (Title left, Start Time right - Fixed Compact Layout) */}
-      {viewMode === 'month' && (
-        <div className="flex-1 min-h-0 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
-          {/* Day Names Header (Mon - Sun) */}
-          <div className="flex-shrink-0 grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-[11px] font-mono text-[#858176] py-1.5 bg-[#FDFBF7] dark:bg-[#1E1D1A]">
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-            <span>Sun</span>
-          </div>
+      {/* Month View (Dynamic Minimalist Row Heights: Empty rows collapse down, active rows expand to fit items) */}
+      {viewMode === 'month' && (() => {
+        const monthWeeks: Date[][] = [];
+        for (let i = 0; i < monthDays.length; i += 7) {
+          monthWeeks.push(monthDays.slice(i, i + 7));
+        }
 
-          {/* Grid Days */}
-          <div className={`flex-1 min-h-0 grid grid-cols-7 ${monthDays.length > 35 ? 'grid-rows-6' : 'grid-rows-5'} divide-y divide-[#E5E1D8]/60 dark:divide-[#2E2C28]/60`}>
-            {monthDays.map((day) => {
-              const dayStr = format(day, 'yyyy-MM-dd');
-              const isCurrMonth = isSameMonth(day, currentDate);
-              const isCurrentDay = isSameDay(day, new Date());
-              const itemsForDay = unifiedItems.filter((i) => i.date === dayStr);
+        return (
+          <div className="flex-1 min-h-0 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
+            {/* Day Names Header (Mon - Sun) */}
+            <div className="flex-shrink-0 grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-[11px] font-mono text-[#858176] py-1.5 bg-[#FDFBF7] dark:bg-[#1E1D1A]">
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+              <span>Sun</span>
+            </div>
 
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={`min-h-0 overflow-hidden p-1 sm:p-1.5 border-r border-[#E5E1D8]/60 dark:border-[#2E2C28]/60 last:border-r-0 flex flex-col ${
-                    !isCurrMonth ? 'bg-[#F5F3ED]/40 dark:bg-[#171614]/40 text-[#858176]/50' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5 flex-shrink-0">
-                    <span
-                      className={`text-[10px] font-mono px-1 rounded ${
-                        isCurrentDay ? 'bg-[#9B8963] text-white font-bold' : 'text-[#858176]'
-                      }`}
-                    >
-                      {format(day, 'd')}
-                    </span>
+            {/* Dynamic Week Rows */}
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#E5E1D8]/60 dark:divide-[#2E2C28]/60">
+              {monthWeeks.map((week, wIdx) => {
+                const maxItems = Math.max(
+                  ...week.map((d) => unifiedItems.filter((i) => i.date === format(d, 'yyyy-MM-dd')).length),
+                  0
+                );
+                // Dynamic row height: 0 items -> 46px (compact, minimal space), 1 item -> 52px, 2 items -> 74px, etc.
+                const rowMinHeight = maxItems === 0 ? '46px' : `${Math.max(52, 28 + maxItems * 23)}px`;
+
+                return (
+                  <div
+                    key={`week-${wIdx}`}
+                    className="grid grid-cols-7 divide-x divide-[#E5E1D8]/60 dark:border-[#2E2C28]/60"
+                    style={{ minHeight: rowMinHeight }}
+                  >
+                    {week.map((day) => {
+                      const dayStr = format(day, 'yyyy-MM-dd');
+                      const isCurrMonth = isSameMonth(day, currentDate);
+                      const isCurrentDay = isSameDay(day, new Date());
+                      const itemsForDay = unifiedItems.filter((i) => i.date === dayStr);
+
+                      return (
+                        <div
+                          key={day.toISOString()}
+                          className={`min-h-0 p-1 sm:p-1.5 flex flex-col ${
+                            !isCurrMonth ? 'bg-[#F5F3ED]/40 dark:bg-[#171614]/40 text-[#858176]/50' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5 flex-shrink-0">
+                            <span
+                              className={`text-[10px] font-mono px-1 rounded ${
+                                isCurrentDay ? 'bg-[#9B8963] text-white font-bold' : 'text-[#858176]'
+                              }`}
+                            >
+                              {format(day, 'd')}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5 flex-1 min-h-0">
+                            {itemsForDay.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => handleItemClick(item)}
+                                className={`w-full text-left text-[9.5px] p-0.5 px-1 rounded leading-tight flex items-center justify-between gap-1 cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
+                                  item.type === 'event'
+                                    ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
+                                    : item.type === 'task_deadline'
+                                    ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 hover:ring-1 hover:ring-red-400/50'
+                                    : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7] hover:ring-1 hover:ring-[#7B8D7A]/50'
+                                }`}
+                                title={`${item.title} (Click to view/edit)`}
+                              >
+                                <span className="truncate">{item.title}</span>
+                                {item.type === 'event' && item.time && !item.allDay && (
+                                  <span className="font-mono text-[8.5px] opacity-80 flex-shrink-0 font-medium ml-1">
+                                    {item.time}
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  <div className="space-y-0.5 overflow-y-auto flex-1 min-h-0 pr-0.5">
-                    {itemsForDay.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleItemClick(item)}
-                        className={`w-full text-left text-[9.5px] p-0.5 px-1 rounded leading-tight flex items-center justify-between gap-1 cursor-pointer transition-all hover:opacity-85 active:scale-[0.98] ${
-                          item.type === 'event'
-                            ? 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3] hover:ring-1 hover:ring-[#9B8963]/50'
-                            : item.type === 'task_deadline'
-                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 hover:ring-1 hover:ring-red-400/50'
-                            : 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7] hover:ring-1 hover:ring-[#7B8D7A]/50'
-                        }`}
-                        title={`${item.title} (Click to view/edit)`}
-                      >
-                        <span className="truncate">{item.title}</span>
-                        {item.type === 'event' && item.time && !item.allDay && (
-                          <span className="font-mono text-[8.5px] opacity-80 flex-shrink-0 font-medium ml-1">
-                            {item.time}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* List View */}
       {viewMode === 'list' && (
@@ -1983,6 +2085,30 @@ const CalendarView: React.FC = () => {
               <option value="yearly" className="bg-[#FFFFFF] dark:bg-[#21201D]">Yearly (Hàng năm - Sinh nhật, ngày kỷ niệm)</option>
             </select>
           </div>
+
+          {eventRecurrence && (
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-[4px] bg-[#FAF8F3] dark:bg-[#1E1D1A] border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80">
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Lặp lại bắt đầu từ</label>
+                <input
+                  type="date"
+                  value={eventRecurrenceStartDate}
+                  onChange={(e) => setEventRecurrenceStartDate(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Đến ngày (tuỳ chọn)</label>
+                <input
+                  type="date"
+                  value={eventRecurrenceEndDate}
+                  onChange={(e) => setEventRecurrenceEndDate(e.target.value)}
+                  placeholder="Không giới hạn"
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-xs text-[#242424] dark:text-[#EAE7DF]">
             <input
@@ -2113,6 +2239,30 @@ const CalendarView: React.FC = () => {
             </select>
           </div>
 
+          {editEventRecurrence && (
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-[4px] bg-[#FAF8F3] dark:bg-[#1E1D1A] border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80">
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Lặp lại bắt đầu từ</label>
+                <input
+                  type="date"
+                  value={editEventRecurrenceStartDate}
+                  onChange={(e) => setEditEventRecurrenceStartDate(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Đến ngày (tuỳ chọn)</label>
+                <input
+                  type="date"
+                  value={editEventRecurrenceEndDate}
+                  onChange={(e) => setEditEventRecurrenceEndDate(e.target.value)}
+                  placeholder="Không giới hạn"
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+            </div>
+          )}
+
           <label className="flex items-center gap-2 text-xs text-[#242424] dark:text-[#EAE7DF]">
             <input
               type="checkbox"
@@ -2201,6 +2351,33 @@ const CalendarView: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={handleUpdateTask} className="space-y-4">
+          {/* Quick Complete / Status Action Banner */}
+          {selectedTask && (
+            <div className="p-2.5 rounded-[4px] bg-[#FAF8F3] dark:bg-[#1E1D1A] border border-[#E5E1D8] dark:border-[#2E2C28] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${selectedTask.status === 'completed' ? 'bg-[#2E7D32]' : 'bg-[#9B8963]'}`} />
+                <span className="text-xs font-mono text-[#858176]">
+                  Trạng thái: <strong className="text-[#242424] dark:text-[#EAE7DF] uppercase">{selectedTask.status}</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  toggleTaskStatus.mutate({ id: selectedTask.id, currentStatus: selectedTask.status });
+                  setSelectedTask(null);
+                }}
+                className={`px-3 py-1.5 text-xs font-mono font-medium rounded-[4px] border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  selectedTask.status === 'completed'
+                    ? 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-300 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-300'
+                    : 'bg-[#2E7D32]/10 hover:bg-[#2E7D32]/20 text-[#2E7D32] dark:bg-[#4CAF50]/15 dark:hover:bg-[#4CAF50]/25 dark:text-[#81C784] border-[#2E7D32]/30'
+                }`}
+              >
+                <Check size={14} />
+                <span>{selectedTask.status === 'completed' ? 'Mở lại task (Undo)' : 'Đánh dấu hoàn thành'}</span>
+              </button>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Task Title *</label>
             <input
@@ -2252,6 +2429,30 @@ const CalendarView: React.FC = () => {
             </div>
           </div>
 
+          {editTaskRecurrence && (
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-[4px] bg-[#FAF8F3] dark:bg-[#1E1D1A] border border-[#E5E1D8]/80 dark:border-[#2E2C28]/80">
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Lặp lại bắt đầu từ</label>
+                <input
+                  type="date"
+                  value={editTaskRecurrenceStartDate}
+                  onChange={(e) => setEditTaskRecurrenceStartDate(e.target.value)}
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#858176] mb-1">Đến ngày (tuỳ chọn)</label>
+                <input
+                  type="date"
+                  value={editTaskRecurrenceEndDate}
+                  onChange={(e) => setEditTaskRecurrenceEndDate(e.target.value)}
+                  placeholder="Không giới hạn"
+                  className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-[#858176] mb-1">Scheduled Date</label>
@@ -2295,6 +2496,19 @@ const CalendarView: React.FC = () => {
             </button>
 
             <div className="flex gap-2">
+              {selectedTask && selectedTask.status !== 'completed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleTaskStatus.mutate({ id: selectedTask.id, currentStatus: selectedTask.status });
+                    setSelectedTask(null);
+                  }}
+                  className="px-3 py-1.5 text-xs font-mono font-medium rounded-[4px] bg-[#2E7D32]/10 hover:bg-[#2E7D32]/20 text-[#2E7D32] dark:bg-[#4CAF50]/15 dark:hover:bg-[#4CAF50]/25 dark:text-[#81C784] border border-[#2E7D32]/30 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Check size={13} />
+                  <span>Hoàn thành</span>
+                </button>
+              )}
               <Button type="button" variant="outline" size="sm" onClick={() => setSelectedTask(null)}>
                 Cancel
               </Button>

@@ -82,22 +82,36 @@ export function useCalendar(startDate?: string, endDate?: string) {
       is_all_day?: boolean;
       location?: string;
       recurrence?: EventRecurrence | null;
+      recurrence_start_date?: string | null;
+      recurrence_end_date?: string | null;
     }) => {
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase
+      const payload: any = {
+        user_id: user.id,
+        title: newEvent.title.trim(),
+        description: newEvent.description?.trim() || null,
+        start_time: newEvent.start_time,
+        end_time: newEvent.end_time,
+        is_all_day: newEvent.is_all_day || false,
+        location: newEvent.location?.trim() || null,
+        recurrence: newEvent.recurrence || null,
+        recurrence_start_date: newEvent.recurrence ? (newEvent.recurrence_start_date || null) : null,
+        recurrence_end_date: newEvent.recurrence ? (newEvent.recurrence_end_date || null) : null,
+      };
+
+      let { data, error } = await supabase
         .from('calendar_events')
-        .insert({
-          user_id: user.id,
-          title: newEvent.title.trim(),
-          description: newEvent.description?.trim() || null,
-          start_time: newEvent.start_time,
-          end_time: newEvent.end_time,
-          is_all_day: newEvent.is_all_day || false,
-          location: newEvent.location?.trim() || null,
-          recurrence: newEvent.recurrence || null,
-        })
+        .insert(payload)
         .select()
         .single();
+
+      if (error && (error.message?.includes('recurrence_start_date') || error.message?.includes('recurrence_end_date'))) {
+        delete payload.recurrence_start_date;
+        delete payload.recurrence_end_date;
+        const retry = await supabase.from('calendar_events').insert(payload).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return data as CalendarEvent;
@@ -110,13 +124,29 @@ export function useCalendar(startDate?: string, endDate?: string) {
   const updateEvent = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CalendarEvent> & { id: string }) => {
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase
+      const payload: any = { ...updates };
+
+      let { data, error } = await supabase
         .from('calendar_events')
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
         .single();
+
+      if (error && (error.message?.includes('recurrence_start_date') || error.message?.includes('recurrence_end_date'))) {
+        delete payload.recurrence_start_date;
+        delete payload.recurrence_end_date;
+        const retry = await supabase
+          .from('calendar_events')
+          .update(payload)
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return data as CalendarEvent;
@@ -176,6 +206,11 @@ export function useCalendar(startDate?: string, endDate?: string) {
     const [origYear, origMonth, origDay] = ev.start_time.split('T')[0].split('-').map(Number);
     const origDate = new Date(origYear, origMonth - 1, origDay);
 
+    const recurStart = ev.recurrence_start_date
+      ? startOfDay(new Date(ev.recurrence_start_date))
+      : startOfDay(origDate);
+    const recurEnd = ev.recurrence_end_date ? endOfDay(new Date(ev.recurrence_end_date)) : null;
+
     if (ev.recurrence === 'yearly') {
       // Perfect for birthdays and anniversaries
       const startY = windowStart.getFullYear();
@@ -187,7 +222,8 @@ export function useCalendar(startDate?: string, endDate?: string) {
         if (
           occDate >= startOfDay(windowStart) &&
           occDate <= endOfDay(windowEnd) &&
-          occDate >= startOfDay(origDate)
+          occDate >= recurStart &&
+          (!recurEnd || occDate <= recurEnd)
         ) {
           unifiedItems.push({
             id: `event-${ev.id}-${y}`,
@@ -213,7 +249,8 @@ export function useCalendar(startDate?: string, endDate?: string) {
         if (
           occDate >= startOfDay(windowStart) &&
           occDate <= endOfDay(windowEnd) &&
-          occDate >= startOfDay(origDate)
+          occDate >= recurStart &&
+          (!recurEnd || occDate <= recurEnd)
         ) {
           unifiedItems.push({
             id: `event-${ev.id}-${format(occDate, 'yyyy-MM')}`,
@@ -229,36 +266,43 @@ export function useCalendar(startDate?: string, endDate?: string) {
         curr = addMonths(curr, 1);
       }
     } else if (ev.recurrence === 'weekly') {
-      let curr = origDate;
+      let curr = origDate < recurStart ? recurStart : origDate;
       while (curr < startOfDay(windowStart)) {
         curr = addWeeks(curr, 1);
       }
       while (curr <= endOfDay(windowEnd)) {
-        unifiedItems.push({
-          id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
-          type: 'event',
-          title: ev.title,
-          description: ev.description,
-          date: format(curr, 'yyyy-MM-dd'),
-          time: timePart,
-          allDay: ev.is_all_day,
-          rawEvent: ev,
-        });
+        if (recurEnd && curr > recurEnd) break;
+        if (curr >= recurStart) {
+          unifiedItems.push({
+            id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
+            type: 'event',
+            title: ev.title,
+            description: ev.description,
+            date: format(curr, 'yyyy-MM-dd'),
+            time: timePart,
+            allDay: ev.is_all_day,
+            rawEvent: ev,
+          });
+        }
         curr = addWeeks(curr, 1);
       }
     } else if (ev.recurrence === 'daily') {
-      let curr = origDate < startOfDay(windowStart) ? startOfDay(windowStart) : origDate;
+      const effectiveStart = origDate < recurStart ? recurStart : origDate;
+      let curr = effectiveStart < startOfDay(windowStart) ? startOfDay(windowStart) : effectiveStart;
       while (curr <= endOfDay(windowEnd)) {
-        unifiedItems.push({
-          id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
-          type: 'event',
-          title: ev.title,
-          description: ev.description,
-          date: format(curr, 'yyyy-MM-dd'),
-          time: timePart,
-          allDay: ev.is_all_day,
-          rawEvent: ev,
-        });
+        if (recurEnd && curr > recurEnd) break;
+        if (curr >= recurStart) {
+          unifiedItems.push({
+            id: `event-${ev.id}-${format(curr, 'yyyy-MM-dd')}`,
+            type: 'event',
+            title: ev.title,
+            description: ev.description,
+            date: format(curr, 'yyyy-MM-dd'),
+            time: timePart,
+            allDay: ev.is_all_day,
+            rawEvent: ev,
+          });
+        }
         curr = addDays(curr, 1);
       }
     }

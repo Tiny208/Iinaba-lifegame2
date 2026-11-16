@@ -52,6 +52,8 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   recurrence?: TaskRecurrence | null;
+  recurrence_start_date?: string | null;
+  recurrence_end_date?: string | null;
   due_date: string | null;
   scheduled_date: string | null;
   is_today_priority: boolean;
@@ -144,6 +146,8 @@ export interface CalendarEvent {
   is_all_day: boolean;
   location: string | null;
   recurrence?: EventRecurrence | null;
+  recurrence_start_date?: string | null;
+  recurrence_end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
