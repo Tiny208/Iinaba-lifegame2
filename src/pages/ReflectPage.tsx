@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Feather,
   BookMarked,
@@ -12,6 +12,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
 import { useReflections } from '@/hooks/useReflections';
 import { useNotes } from '@/hooks/useNotes';
 import { Button } from '@/components/common/Button';
@@ -316,24 +317,36 @@ const WeeklyReviewView: React.FC = () => {
 // C. PRINCIPLES VIEW (Personal Compass)
 // ==============================================================================
 const PrinciplesView: React.FC = () => {
+  const { user } = useAuth();
   const { notes, isLoading, createNote, deleteNote } = useNotes({ noteType: 'principle' });
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [principleError, setPrincipleError] = useState<string | null>(null);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    await createNote.mutateAsync({
-      title: newTitle.trim(),
-      content: newContent.trim(),
-      note_type: 'principle',
-    });
+    if (!user) {
+      setPrincipleError('Bạn cần đăng nhập để tạo nguyên tắc.');
+      return;
+    }
 
-    setNewTitle('');
-    setNewContent('');
-    setIsAdding(false);
+    try {
+      setPrincipleError(null);
+      await createNote.mutateAsync({
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        note_type: 'principle',
+      });
+
+      setNewTitle('');
+      setNewContent('');
+      setIsAdding(false);
+    } catch (err: any) {
+      setPrincipleError(err?.message || 'Không thể tạo nguyên tắc.');
+    }
   };
 
   return (
@@ -351,6 +364,12 @@ const PrinciplesView: React.FC = () => {
           </Button>
         )}
       </div>
+
+      {principleError && (
+        <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+          {principleError}
+        </div>
+      )}
 
       {isAdding && (
         <form onSubmit={handleAdd} className="p-4 rounded bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] space-y-3">

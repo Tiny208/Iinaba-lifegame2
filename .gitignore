@@ -27,3 +27,12 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Graphify temporary caches and backups
+graphify-out/20*
+graphify-out/.graphify_build_state.json
+graphify-out/*.sig
+graphify-out/*.pending.json
+graphify-out/manifest.json
+graphify-out/cache/ast/
+

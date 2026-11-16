@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import {
   Calendar as CalendarIcon,
   CheckCircle2,
@@ -99,9 +100,11 @@ export const FocusPage: React.FC = () => {
 // 1. TODAY VIEW
 // ==============================================================================
 const TodayView: React.FC = () => {
+  const { user } = useAuth();
   const todayDateStr = format(new Date(), 'yyyy-MM-dd');
   const { tasks, isLoading, toggleTaskStatus, toggleTodayPriority, createTask } = useTasks();
   const [newTitle, setNewTitle] = useState('');
+  const [todayError, setTodayError] = useState<string | null>(null);
 
   const todayPriorities = tasks.filter((t) => t.is_today_priority && !t.is_archived && t.status !== 'completed');
   const scheduledForToday = tasks.filter((t) => t.scheduled_date === todayDateStr && !t.is_today_priority && !t.is_archived && t.status !== 'completed');
@@ -109,13 +112,22 @@ const TodayView: React.FC = () => {
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    await createTask.mutateAsync({
-      title: newTitle.trim(),
-      scheduled_date: todayDateStr,
-      status: 'todo',
-      priority: 'medium',
-    });
-    setNewTitle('');
+    if (!user) {
+      setTodayError('Bạn cần đăng nhập để tạo task.');
+      return;
+    }
+    setTodayError(null);
+    try {
+      await createTask.mutateAsync({
+        title: newTitle.trim(),
+        scheduled_date: todayDateStr,
+        status: 'todo',
+        priority: 'medium',
+      });
+      setNewTitle('');
+    } catch (err: any) {
+      setTodayError(err?.message || 'Không thể tạo task. Vui lòng thử lại.');
+    }
   };
 
   if (isLoading) return <CardSkeleton rows={4} />;
@@ -167,6 +179,11 @@ const TodayView: React.FC = () => {
             Add
           </Button>
         </form>
+        {todayError && (
+          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-2 rounded">
+            {todayError}
+          </div>
+        )}
 
         {scheduledForToday.length === 0 ? (
           <div className="text-xs text-[#858176] py-4 text-center">No other tasks scheduled for today.</div>
@@ -191,6 +208,7 @@ const TodayView: React.FC = () => {
 // 2. TASKS VIEW
 // ==============================================================================
 const TasksView: React.FC = () => {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
@@ -208,6 +226,8 @@ const TasksView: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const [isTaskSaving, setIsTaskSaving] = useState(false);
 
   // Form states
   const [formTitle, setFormTitle] = useState('');
@@ -223,6 +243,7 @@ const TasksView: React.FC = () => {
 
   const openCreateModal = () => {
     setEditingTask(null);
+    setTaskError(null);
     setFormTitle('');
     setFormDescription('');
     setFormPriority('medium');
@@ -238,6 +259,7 @@ const TasksView: React.FC = () => {
 
   const openEditModal = (task: Task) => {
     setEditingTask(task);
+    setTaskError(null);
     setFormTitle(task.title);
     setFormDescription(task.description || '');
     setFormPriority(task.priority);
@@ -255,36 +277,51 @@ const TasksView: React.FC = () => {
     e.preventDefault();
     if (!formTitle.trim()) return;
 
-    if (editingTask) {
-      await updateTask.mutateAsync({
-        id: editingTask.id,
-        title: formTitle.trim(),
-        description: formDescription.trim() || null,
-        priority: formPriority,
-        status: formStatus,
-        recurrence: formRecurrence || null,
-        due_date: formDueDate || null,
-        scheduled_date: formScheduledDate || null,
-        project_id: formProjectId || null,
-        area_id: formAreaId || null,
-        is_today_priority: formTodayPriority,
-      });
-    } else {
-      await createTask.mutateAsync({
-        title: formTitle.trim(),
-        description: formDescription.trim() || null,
-        priority: formPriority,
-        status: formStatus,
-        recurrence: formRecurrence || null,
-        due_date: formDueDate || null,
-        scheduled_date: formScheduledDate || null,
-        project_id: formProjectId || null,
-        area_id: formAreaId || null,
-        is_today_priority: formTodayPriority,
-      });
+    if (!user) {
+      setTaskError('Bạn cần đăng nhập để tạo hoặc cập nhật task.');
+      return;
     }
 
-    setIsCreateOpen(false);
+    setIsTaskSaving(true);
+    setTaskError(null);
+
+    try {
+      if (editingTask) {
+        await updateTask.mutateAsync({
+          id: editingTask.id,
+          title: formTitle.trim(),
+          description: formDescription.trim() || null,
+          priority: formPriority,
+          status: formStatus,
+          recurrence: formRecurrence || null,
+          due_date: formDueDate || null,
+          scheduled_date: formScheduledDate || null,
+          project_id: formProjectId || null,
+          area_id: formAreaId || null,
+          is_today_priority: formTodayPriority,
+        });
+      } else {
+        await createTask.mutateAsync({
+          title: formTitle.trim(),
+          description: formDescription.trim() || null,
+          priority: formPriority,
+          status: formStatus,
+          recurrence: formRecurrence || null,
+          due_date: formDueDate || null,
+          scheduled_date: formScheduledDate || null,
+          project_id: formProjectId || null,
+          area_id: formAreaId || null,
+          is_today_priority: formTodayPriority,
+        });
+      }
+
+      setIsCreateOpen(false);
+    } catch (err: any) {
+      console.error('Error saving task:', err);
+      setTaskError(err?.message || 'Không thể lưu task. Vui lòng thử lại.');
+    } finally {
+      setIsTaskSaving(false);
+    }
   };
 
   // Client-side priority filter if needed
@@ -385,6 +422,17 @@ const TasksView: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={handleSaveTask} className="space-y-4">
+          {!user && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+              <span>Bạn chưa đăng nhập. Vui lòng đăng nhập để lưu trữ công việc.</span>
+              <Link to="/auth" className="underline font-semibold ml-2">Đăng nhập</Link>
+            </div>
+          )}
+          {taskError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+              {taskError}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Title *</label>
             <input
@@ -516,8 +564,8 @@ const TasksView: React.FC = () => {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
-              {editingTask ? 'Save Changes' : 'Create Task'}
+            <Button type="submit" variant="primary" size="sm" disabled={isTaskSaving}>
+              {isTaskSaving ? 'Saving...' : editingTask ? 'Save Changes' : 'Create Task'}
             </Button>
           </div>
         </form>
@@ -626,6 +674,7 @@ const TaskRow: React.FC<{
 // 3. PROJECTS VIEW
 // ==============================================================================
 const ProjectsView: React.FC = () => {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('active');
   const { projects, isLoading, createProject, updateProject, deleteProject } = useProjects(
     statusFilter === 'all' ? undefined : statusFilter
@@ -638,6 +687,8 @@ const ProjectsView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projectError, setProjectError] = useState<string | null>(null);
+  const [isProjectSaving, setIsProjectSaving] = useState(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -650,6 +701,7 @@ const ProjectsView: React.FC = () => {
 
   const openCreateModal = () => {
     setEditingProject(null);
+    setProjectError(null);
     setName('');
     setDescription('');
     setGoal('');
@@ -662,6 +714,7 @@ const ProjectsView: React.FC = () => {
 
   const openEditModal = (p: Project) => {
     setEditingProject(p);
+    setProjectError(null);
     setName(p.name);
     setDescription(p.description || '');
     setGoal(p.goal || '');
@@ -676,30 +729,45 @@ const ProjectsView: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (editingProject) {
-      await updateProject.mutateAsync({
-        id: editingProject.id,
-        name: name.trim(),
-        description: description.trim() || null,
-        goal: goal.trim() || null,
-        area_id: areaId || null,
-        status,
-        start_date: startDate || null,
-        target_date: targetDate || null,
-      });
-    } else {
-      await createProject.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || null,
-        goal: goal.trim() || null,
-        area_id: areaId || null,
-        status,
-        start_date: startDate || null,
-        target_date: targetDate || null,
-      });
+    if (!user) {
+      setProjectError('Bạn cần đăng nhập để tạo hoặc cập nhật project.');
+      return;
     }
 
-    setIsModalOpen(false);
+    setIsProjectSaving(true);
+    setProjectError(null);
+
+    try {
+      if (editingProject) {
+        await updateProject.mutateAsync({
+          id: editingProject.id,
+          name: name.trim(),
+          description: description.trim() || null,
+          goal: goal.trim() || null,
+          area_id: areaId || null,
+          status,
+          start_date: startDate || null,
+          target_date: targetDate || null,
+        });
+      } else {
+        await createProject.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || null,
+          goal: goal.trim() || null,
+          area_id: areaId || null,
+          status,
+          start_date: startDate || null,
+          target_date: targetDate || null,
+        });
+      }
+
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error('Error saving project:', err);
+      setProjectError(err?.message || 'Không thể lưu project. Vui lòng thử lại.');
+    } finally {
+      setIsProjectSaving(false);
+    }
   };
 
   return (
@@ -868,6 +936,17 @@ const ProjectsView: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={handleSave} className="space-y-4">
+          {!user && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+              <span>Bạn chưa đăng nhập. Vui lòng đăng nhập để lưu trữ project.</span>
+              <Link to="/auth" className="underline font-semibold ml-2">Đăng nhập</Link>
+            </div>
+          )}
+          {projectError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+              {projectError}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Project Name *</label>
             <input
@@ -957,8 +1036,8 @@ const ProjectsView: React.FC = () => {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
-              {editingProject ? 'Save Changes' : 'Create Project'}
+            <Button type="submit" variant="primary" size="sm" disabled={isProjectSaving}>
+              {isProjectSaving ? 'Saving...' : editingProject ? 'Save Changes' : 'Create Project'}
             </Button>
           </div>
         </form>
@@ -986,10 +1065,13 @@ const ProjectsView: React.FC = () => {
 // 4. AREAS VIEW
 // ==============================================================================
 const AreasView: React.FC = () => {
+  const { user } = useAuth();
   const { areas, isLoading, createArea, updateArea, deleteArea } = useAreas();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
   const [areaToDelete, setAreaToDelete] = useState<string | null>(null);
+  const [areaError, setAreaError] = useState<string | null>(null);
+  const [isAreaSaving, setIsAreaSaving] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -997,6 +1079,7 @@ const AreasView: React.FC = () => {
 
   const openCreateModal = () => {
     setEditingArea(null);
+    setAreaError(null);
     setName('');
     setDescription('');
     setColor('#9B8963');
@@ -1005,6 +1088,7 @@ const AreasView: React.FC = () => {
 
   const openEditModal = (a: Area) => {
     setEditingArea(a);
+    setAreaError(null);
     setName(a.name);
     setDescription(a.description || '');
     setColor(a.color || '#9B8963');
@@ -1015,22 +1099,37 @@ const AreasView: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (editingArea) {
-      await updateArea.mutateAsync({
-        id: editingArea.id,
-        name: name.trim(),
-        description: description.trim() || null,
-        color,
-      });
-    } else {
-      await createArea.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || null,
-        color,
-      });
+    if (!user) {
+      setAreaError('Bạn cần đăng nhập để tạo hoặc cập nhật area.');
+      return;
     }
 
-    setIsModalOpen(false);
+    setIsAreaSaving(true);
+    setAreaError(null);
+
+    try {
+      if (editingArea) {
+        await updateArea.mutateAsync({
+          id: editingArea.id,
+          name: name.trim(),
+          description: description.trim() || null,
+          color,
+        });
+      } else {
+        await createArea.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || null,
+          color,
+        });
+      }
+
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error('Error saving area:', err);
+      setAreaError(err?.message || 'Không thể lưu area. Vui lòng thử lại.');
+    } finally {
+      setIsAreaSaving(false);
+    }
   };
 
   return (
@@ -1098,6 +1197,17 @@ const AreasView: React.FC = () => {
         maxWidth="sm"
       >
         <form onSubmit={handleSave} className="space-y-4">
+          {!user && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+              <span>Bạn chưa đăng nhập. Vui lòng đăng nhập để lưu trữ area.</span>
+              <Link to="/auth" className="underline font-semibold ml-2">Đăng nhập</Link>
+            </div>
+          )}
+          {areaError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+              {areaError}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Area Name *</label>
             <input
@@ -1138,8 +1248,8 @@ const AreasView: React.FC = () => {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
-              Save Area
+            <Button type="submit" variant="primary" size="sm" disabled={isAreaSaving}>
+              {isAreaSaving ? 'Saving...' : editingArea ? 'Save Changes' : 'Save Area'}
             </Button>
           </div>
         </form>
@@ -1175,6 +1285,7 @@ const formatHourLabel = (hour: number) => {
 };
 
 const CalendarView: React.FC = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'week' | 'day' | 'list' | 'month'>(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       return 'day';
@@ -1184,6 +1295,33 @@ const CalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Prevent outer page scrolling on desktop week view (Request 4)
+  useEffect(() => {
+    if (viewMode === 'week') {
+      const lockOuterScroll = () => {
+        if (window.innerWidth >= 768) {
+          document.documentElement.style.overflow = 'hidden';
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+        }
+      };
+
+      lockOuterScroll();
+      window.addEventListener('resize', lockOuterScroll);
+
+      return () => {
+        window.removeEventListener('resize', lockOuterScroll);
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+      };
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+  }, [viewMode]);
 
   // Update current time every minute for red indicator
   useEffect(() => {
@@ -1211,6 +1349,8 @@ const CalendarView: React.FC = () => {
   const [isAllDay, setIsAllDay] = useState(false);
   const [eventLocation, setEventLocation] = useState('');
   const [eventRecurrence, setEventRecurrence] = useState<EventRecurrence | ''>('');
+  const [eventError, setEventError] = useState<string | null>(null);
+  const [isEventSaving, setIsEventSaving] = useState(false);
 
   // Selected Event (View / Edit) state
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -1281,6 +1421,7 @@ const CalendarView: React.FC = () => {
     if (item.type === 'event' && item.rawEvent) {
       const ev = item.rawEvent;
       setSelectedEvent(ev);
+      setEventError(null);
       setEditEventTitle(ev.title);
       setEditEventDesc(ev.description || '');
       const datePart = ev.start_time.split('T')[0];
@@ -1309,52 +1450,88 @@ const CalendarView: React.FC = () => {
     e.preventDefault();
     if (!eventTitle.trim()) return;
 
-    const startIso = isAllDay
-      ? `${eventDate}T00:00:00Z`
-      : `${eventDate}T${eventStartTime}:00`;
-    const endIso = isAllDay
-      ? `${eventDate}T23:59:59Z`
-      : `${eventDate}T${eventEndTime}:00`;
+    if (!user) {
+      setEventError('Bạn cần đăng nhập để tạo và lưu trữ sự kiện.');
+      return;
+    }
 
-    await createEvent.mutateAsync({
-      title: eventTitle.trim(),
-      description: eventDesc.trim() || undefined,
-      start_time: startIso,
-      end_time: endIso,
-      is_all_day: isAllDay,
-      location: eventLocation.trim() || undefined,
-      recurrence: eventRecurrence || null,
-    });
+    setIsEventSaving(true);
+    setEventError(null);
 
-    setIsEventModalOpen(false);
-    setEventTitle('');
-    setEventDesc('');
-    setEventRecurrence('');
+    try {
+      const safeStartTime = eventStartTime ? eventStartTime.substring(0, 5) : '09:00';
+      const safeEndTime = eventEndTime ? eventEndTime.substring(0, 5) : '10:00';
+      const startISO = isAllDay
+        ? `${eventDate}T00:00:00`
+        : `${eventDate}T${safeStartTime}:00`;
+      const endISO = isAllDay
+        ? `${eventDate}T23:59:59`
+        : `${eventDate}T${safeEndTime}:00`;
+
+      await createEvent.mutateAsync({
+        title: eventTitle.trim(),
+        description: eventDesc.trim() || undefined,
+        start_time: startISO,
+        end_time: endISO,
+        is_all_day: isAllDay,
+        location: eventLocation.trim() || undefined,
+        recurrence: eventRecurrence ? (eventRecurrence as EventRecurrence) : null,
+      });
+
+      setEventTitle('');
+      setEventDesc('');
+      setEventLocation('');
+      setEventRecurrence('');
+      setIsAllDay(false);
+      setIsEventModalOpen(false);
+    } catch (err: any) {
+      console.error('Failed to create calendar event:', err);
+      setEventError(err?.message || 'Không thể tạo sự kiện. Vui lòng thử lại.');
+    } finally {
+      setIsEventSaving(false);
+    }
   };
 
   const handleUpdateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEvent || !editEventTitle.trim()) return;
 
-    const startIso = editIsAllDay
-      ? `${editEventDate}T00:00:00Z`
-      : `${editEventDate}T${editEventStartTime}:00`;
-    const endIso = editIsAllDay
-      ? `${editEventDate}T23:59:59Z`
-      : `${editEventDate}T${editEventEndTime}:00`;
+    if (!user) {
+      setEventError('Bạn cần đăng nhập để cập nhật sự kiện.');
+      return;
+    }
 
-    await updateEvent.mutateAsync({
-      id: selectedEvent.id,
-      title: editEventTitle.trim(),
-      description: editEventDesc.trim() || null,
-      start_time: startIso,
-      end_time: endIso,
-      is_all_day: editIsAllDay,
-      location: editEventLocation.trim() || null,
-      recurrence: editEventRecurrence || null,
-    });
+    setIsEventSaving(true);
+    setEventError(null);
 
-    setSelectedEvent(null);
+    try {
+      const safeStartTime = editEventStartTime ? editEventStartTime.substring(0, 5) : '09:00';
+      const safeEndTime = editEventEndTime ? editEventEndTime.substring(0, 5) : '10:00';
+      const startISO = editIsAllDay
+        ? `${editEventDate}T00:00:00`
+        : `${editEventDate}T${safeStartTime}:00`;
+      const endISO = editIsAllDay
+        ? `${editEventDate}T23:59:59`
+        : `${editEventDate}T${safeEndTime}:00`;
+
+      await updateEvent.mutateAsync({
+        id: selectedEvent.id,
+        title: editEventTitle.trim(),
+        description: editEventDesc.trim() || undefined,
+        start_time: startISO,
+        end_time: endISO,
+        is_all_day: editIsAllDay,
+        location: editEventLocation.trim() || undefined,
+        recurrence: editEventRecurrence ? (editEventRecurrence as EventRecurrence) : null,
+      });
+
+      setSelectedEvent(null);
+    } catch (err: any) {
+      console.error('Failed to update calendar event:', err);
+      setEventError(err?.message || 'Không thể cập nhật sự kiện. Vui lòng thử lại.');
+    } finally {
+      setIsEventSaving(false);
+    }
   };
 
   const handleDeleteSelectedEvent = async () => {
@@ -1513,7 +1690,7 @@ const CalendarView: React.FC = () => {
           {/* 24-Hour Scrollable Grid */}
           <div
             ref={scrollContainerRef}
-            className="max-h-[640px] overflow-y-auto overflow-x-auto relative"
+            className="h-[calc(100vh-270px)] md:h-[calc(100vh-250px)] max-h-[720px] min-h-[420px] overflow-y-auto overflow-x-auto relative"
           >
             <div className={`flex ${viewMode === 'week' ? 'min-w-[700px]' : 'min-w-full'}`}>
               {/* Hour Labels Left Gutter */}
@@ -1737,12 +1914,26 @@ const CalendarView: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       <Modal
         isOpen={isEventModalOpen}
-        onClose={() => setIsEventModalOpen(false)}
+        onClose={() => {
+          setIsEventModalOpen(false);
+          setEventError(null);
+        }}
         title="New Calendar Event"
         subtitle="Independent event (will not duplicate task data)."
         maxWidth="md"
       >
         <form onSubmit={handleSaveNewEvent} className="space-y-4">
+          {!user && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+              <span>Bạn chưa đăng nhập. Vui lòng đăng nhập để lưu trữ sự kiện.</span>
+              <Link to="/auth" className="underline font-semibold ml-2">Đăng nhập</Link>
+            </div>
+          )}
+          {eventError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+              {eventError}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Event Title *</label>
             <input
@@ -1841,8 +2032,8 @@ const CalendarView: React.FC = () => {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsEventModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
-              Create Event
+            <Button type="submit" variant="primary" size="sm" disabled={isEventSaving}>
+              {isEventSaving ? 'Creating...' : 'Create Event'}
             </Button>
           </div>
         </form>
@@ -1853,12 +2044,26 @@ const CalendarView: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       <Modal
         isOpen={!!selectedEvent}
-        onClose={() => setSelectedEvent(null)}
+        onClose={() => {
+          setSelectedEvent(null);
+          setEventError(null);
+        }}
         title="Event Details & Edit"
         subtitle="Update event timeline, location, or notes."
         maxWidth="md"
       >
         <form onSubmit={handleUpdateEvent} className="space-y-4">
+          {!user && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+              <span>Bạn chưa đăng nhập. Vui lòng đăng nhập để chỉnh sửa sự kiện.</span>
+              <Link to="/auth" className="underline font-semibold ml-2">Đăng nhập</Link>
+            </div>
+          )}
+          {eventError && (
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+              {eventError}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-[#858176] mb-1">Event Title *</label>
             <input

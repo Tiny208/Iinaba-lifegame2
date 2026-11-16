@@ -26,7 +26,7 @@ import { formatDate, formatRelativeDate } from '@/lib/utils';
 import { Task } from '@/types/database';
 
 export const HomePage: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { tasks, isLoading: tasksLoading, toggleTaskStatus, createTask } = useTasks();
   const { notes, isLoading: notesLoading } = useNotes();
   const { unprocessedCount } = useInbox();
@@ -34,6 +34,7 @@ export const HomePage: React.FC = () => {
 
   const [newPriorityTitle, setNewPriorityTitle] = useState('');
   const [isAddingPriority, setIsAddingPriority] = useState(false);
+  const [priorityError, setPriorityError] = useState<string | null>(null);
 
   const todayStr = format(new Date(), 'EEEE, MMMM d, yyyy');
   const greeting = getGreeting(profile?.full_name);
@@ -65,16 +66,27 @@ export const HomePage: React.FC = () => {
     e.preventDefault();
     if (!newPriorityTitle.trim()) return;
 
-    await createTask.mutateAsync({
-      title: newPriorityTitle.trim(),
-      is_today_priority: true,
-      status: 'todo',
-      priority: 'high',
-      scheduled_date: format(new Date(), 'yyyy-MM-dd'),
-    });
+    if (!user) {
+      setPriorityError('Bạn cần đăng nhập để thêm mục ưu tiên hôm nay.');
+      return;
+    }
 
-    setNewPriorityTitle('');
-    setIsAddingPriority(false);
+    try {
+      setPriorityError(null);
+      await createTask.mutateAsync({
+        title: newPriorityTitle.trim(),
+        is_today_priority: true,
+        status: 'todo',
+        priority: 'high',
+        scheduled_date: format(new Date(), 'yyyy-MM-dd'),
+      });
+
+      setNewPriorityTitle('');
+      setIsAddingPriority(false);
+    } catch (err: any) {
+      console.error('Failed to add priority:', err);
+      setPriorityError(err?.message || 'Không thể thêm mục ưu tiên.');
+    }
   };
 
   return (

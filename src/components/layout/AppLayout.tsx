@@ -6,9 +6,11 @@ import { Header } from './Header';
 import { QuickCaptureModal } from '../common/QuickCaptureModal';
 import { GlobalSearchModal } from '../common/GlobalSearchModal';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { AlertCircle, LogIn } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
+  const { user, loading } = useAuth();
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const isConfigured = isSupabaseConfigured();
@@ -74,6 +76,24 @@ export const AppLayout: React.FC = () => {
               className="font-medium underline hover:text-[#242424] dark:hover:text-[#FFFFFF] ml-2"
             >
               Configure Now
+            </Link>
+          </div>
+        )}
+
+        {!user && !loading && isConfigured && (
+          <div className="bg-[#9B8963]/15 border-b border-[#9B8963]/30 px-4 py-2.5 text-xs text-[#857451] dark:text-[#D1C2A3] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-[#9B8963] flex-shrink-0" />
+              <span>
+                Bạn chưa đăng nhập. Vui lòng đăng nhập để tạo và lưu trữ sự kiện, công việc và ghi chú.
+              </span>
+            </div>
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-1 font-medium px-2.5 py-1 rounded bg-[#9B8963] text-white hover:bg-[#857451] transition-colors ml-2 flex-shrink-0 shadow-xs"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Đăng nhập ngay
             </Link>
           </div>
         )}

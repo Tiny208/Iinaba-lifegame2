@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import {
   BookOpen,
   Plus,
@@ -58,13 +59,27 @@ export const LibraryPage: React.FC = () => {
     setSearchParams({ noteId: id });
   };
 
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [createNoteError, setCreateNoteError] = useState<string | null>(null);
+
   const handleCreateNewNote = async () => {
-    const created = await createNote.mutateAsync({
-      title: 'Untitled Note',
-      content: '',
-      note_type: typeFilter === 'all' ? 'knowledge' : typeFilter,
-    });
-    setSearchParams({ noteId: created.id });
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    try {
+      setCreateNoteError(null);
+      const created = await createNote.mutateAsync({
+        title: 'Untitled Note',
+        content: '',
+        note_type: typeFilter === 'all' ? 'knowledge' : typeFilter,
+      });
+      setSearchParams({ noteId: created.id });
+    } catch (err: any) {
+      console.error('Failed to create note:', err);
+      setCreateNoteError(err?.message || 'Không thể tạo ghi chú. Vui lòng thử lại.');
+    }
   };
 
   return (
@@ -86,6 +101,12 @@ export const LibraryPage: React.FC = () => {
           New Note
         </Button>
       </div>
+
+      {createNoteError && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+          {createNoteError}
+        </div>
+      )}
 
       {/* Main Two-Column Library Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

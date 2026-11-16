@@ -14,3 +14,7 @@
 - **Strictly Out of Scope:** NO habit tracking, NO gamification (XP, streaks, badges), NO vanity productivity scores, NO AI chatbot bloat, NO social features.
 - **Calm Editorial Aesthetic:** High-end typography, generous whitespace, warm parchment (`#F5F3ED`), crisp surface (`#FFFFFF`), sumi ink (`#242424`), and antique brass (`#9B8963`).
 - **Data Integrity & Security:** PostgreSQL with Row Level Security (RLS) on all tables (`auth.uid() = user_id`). Private storage in `inaba-attachments`.
+
+## 3. Working Protocol & Local Verification (MANDATORY)
+- **Localhost Persistence:** ALWAYS keep localhost running (`npm run dev`) during work sessions so the user can immediately test and verify in the browser. Do NOT shut down localhost until the user explicitly agrees and confirms they have pushed to origin.
+- **Graphify-First Verification:** ALWAYS query Graphify (`graphify-out/` / CLI query) prior to making any codebase modifications to minimize token consumption.
