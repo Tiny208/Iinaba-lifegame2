@@ -1887,7 +1887,7 @@ const CalendarView: React.FC = () => {
         }
 
         return (
-          <div className="flex-1 min-h-0 border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
+          <div className="w-full border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[6px] bg-[#FFFFFF] dark:bg-[#21201D] overflow-hidden shadow-subtle flex flex-col">
             {/* Day Names Header (Mon - Sun) */}
             <div className="flex-shrink-0 grid grid-cols-7 border-b border-[#E5E1D8] dark:border-[#2E2C28] text-center text-[11px] font-mono text-[#858176] py-1.5 bg-[#FDFBF7] dark:bg-[#1E1D1A]">
               <span>Mon</span>
@@ -1900,7 +1900,7 @@ const CalendarView: React.FC = () => {
             </div>
 
             {/* Dynamic Week Rows */}
-            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#E5E1D8]/60 dark:divide-[#2E2C28]/60">
+            <div className="divide-y divide-[#E5E1D8]/60 dark:divide-[#2E2C28]/60">
               {monthWeeks.map((week, wIdx) => {
                 const maxItems = Math.max(
                   ...week.map((d) => unifiedItems.filter((i) => i.date === format(d, 'yyyy-MM-dd')).length),
