@@ -1,5 +1,5 @@
 export type NoteType = 'knowledge' | 'idea' | 'reference' | 'principle';
-export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+export type TaskStatus = 'todo' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskRecurrence = 'daily' | 'weekly' | 'monthly';
 export type ProjectStatus = 'active' | 'paused' | 'completed';

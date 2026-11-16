@@ -1,7 +1,7 @@
 # Graph Report - LifeGame2  (2026-11-16)
 
 ## Corpus Check
-- 57 files · ~32,556 words
+- 57 files · ~32,527 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 12 file(s) not represented in the graph (top: (none) 9, .example 1, .toml 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `22cdfe72`
+- Built from commit: `a1766772`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -46,18 +46,18 @@
 6. `compilerOptions` - 17 edges
 7. `EmptyState()` - 16 edges
 8. `CardSkeleton()` - 16 edges
-9. `HomePage()` - 15 edges
-10. `Modal()` - 15 edges
+9. `Modal()` - 15 edges
+10. `HomePage()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Core Module: Home & Today Priorities` --embodies--> `Philosophy: Stoicism & Anti-Overhead Minimalism`  [INFERRED]
   src/pages/HomePage.tsx → INABA_RULES.md
 - `INABA System Rules & Specifications` --architects--> `Supabase PostgreSQL Database Architecture & RLS`  [EXTRACTED]
   INABA_RULES.md → supabase/migrations/20261107000000_inaba_init.sql
-- `AppLayout()` --calls--> `QuickCaptureModal()`  [EXTRACTED]
-  src/components/layout/AppLayout.tsx → src/components/common/QuickCaptureModal.tsx
-- `AppLayout()` --calls--> `useAuth()`  [EXTRACTED]
-  src/components/layout/AppLayout.tsx → src/context/AuthContext.tsx
+- `StatusPill()` --calls--> `cn()`  [EXTRACTED]
+  src/components/common/StatusPill.tsx → src/lib/utils.ts
+- `App()` --calls--> `FocusPage()`  [EXTRACTED]
+  src/App.tsx → src/pages/FocusPage.tsx
 - `AppLayout()` --calls--> `isSupabaseConfigured()`  [EXTRACTED]
   src/components/layout/AppLayout.tsx → src/lib/supabase.ts
 

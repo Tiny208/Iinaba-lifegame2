@@ -211,7 +211,7 @@ const TodayView: React.FC = () => {
 // ==============================================================================
 const TasksView: React.FC = () => {
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('todo');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [areaFilter, setAreaFilter] = useState<string>('all');
@@ -340,10 +340,9 @@ const TasksView: React.FC = () => {
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="p-1.5 text-xs bg-[#FFFFFF] dark:bg-[#21201D] border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[3px] text-[#242424] dark:text-[#EAE7DF]"
           >
-            <option value="all">All Statuses</option>
             <option value="todo">Todo</option>
-            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="all">All Statuses</option>
           </select>
 
           {/* Priority filter */}
@@ -467,7 +466,6 @@ const TasksView: React.FC = () => {
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               >
                 <option value="todo" className="bg-[#FFFFFF] dark:bg-[#21201D]">Todo</option>
-                <option value="in_progress" className="bg-[#FFFFFF] dark:bg-[#21201D]">In Progress</option>
                 <option value="completed" className="bg-[#FFFFFF] dark:bg-[#21201D]">Completed</option>
               </select>
             </div>
@@ -2222,10 +2220,8 @@ const CalendarView: React.FC = () => {
                 onChange={(e) => setEditTaskStatus(e.target.value as TaskStatus)}
                 className="w-full p-2 text-xs bg-transparent border border-[#E5E1D8] dark:border-[#2E2C28] rounded-[4px] text-[#242424] dark:text-[#EAE7DF]"
               >
-                <option value="todo" className="bg-[#FFFFFF] dark:bg-[#21201D]">To Do</option>
-                <option value="in_progress" className="bg-[#FFFFFF] dark:bg-[#21201D]">In Progress</option>
+                <option value="todo" className="bg-[#FFFFFF] dark:bg-[#21201D]">Todo</option>
                 <option value="completed" className="bg-[#FFFFFF] dark:bg-[#21201D]">Completed</option>
-                <option value="cancelled" className="bg-[#FFFFFF] dark:bg-[#21201D]">Cancelled</option>
               </select>
             </div>
             <div>

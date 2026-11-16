@@ -35,4 +35,5 @@ graphify-out/*.sig
 graphify-out/*.pending.json
 graphify-out/manifest.json
 graphify-out/cache/ast/
+graphify-out/cache/last_query_stamp
 

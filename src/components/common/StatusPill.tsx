@@ -15,9 +15,6 @@ export const StatusPill: React.FC<StatusPillProps> = ({ type, value, className }
         if (value === 'completed') {
           return 'bg-[#7B8D7A]/15 text-[#5F705E] dark:bg-[#7B8D7A]/20 dark:text-[#A8BCA7]';
         }
-        if (value === 'in_progress') {
-          return 'bg-[#9B8963]/15 text-[#857451] dark:bg-[#9B8963]/25 dark:text-[#D1C2A3]';
-        }
         return 'bg-[#EAE6DD] text-[#858176] dark:bg-[#2A2824] dark:text-[#8C877D]';
 
       case 'priority':
